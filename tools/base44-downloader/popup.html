@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Base44 Downloader</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="shell">
+      <header>
+        <div>
+          <p class="eyebrow">Base44</p>
+          <h1>Code Downloader</h1>
+        </div>
+        <span class="badge" id="tabStatus">...</span>
+      </header>
+
+      <label class="field">
+        <span>Project ID</span>
+        <input id="appId" placeholder="e.g. 6ac530e3c8db0c2db3bf2155">
+      </label>
+
+      <div class="actions">
+        <button id="detectBtn" type="button">Detect Project</button>
+        <button id="downloadBtn" type="button" class="primary">Download ZIP</button>
+      </div>
+
+      <section class="advanced">
+        <button id="toggleAdvanced" type="button" class="link">Fallback Mode: File List</button>
+        <div id="advancedPanel" hidden>
+          <p>
+            If Base44 blocks the direct code API, paste file paths (one per line).
+            The extension will switch through the editor and extract each file from Monaco.
+          </p>
+          <div class="actions">
+            <button id="detectPathsBtn" type="button">Detect Paths</button>
+            <button id="downloadByPathsBtn" type="button">Download by Paths</button>
+          </div>
+          <textarea id="paths" spellcheck="false" placeholder="src/App.jsx&#10;src/main.jsx&#10;package.json"></textarea>
+        </div>
+      </section>
+
+      <pre id="log" aria-live="polite"></pre>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>
