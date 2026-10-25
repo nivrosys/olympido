@@ -1,0 +1,119 @@
+version: '3.8'
+
+services:
+  # ------------------------------------------------------------
+  # 1. Olympido NestJS Backend Service
+  # ------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: olympido_backend
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - DATABASE_URL=postgresql://postgres:00000000@postgres:5432/olympido_dev?schema=public
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+      - JWT_ACCESS_SECRET=olympido_jwt_access_super_secret_token_key_production_2026
+      - JWT_REFRESH_SECRET=olympido_jwt_refresh_super_secret_token_key_production_2026
+      - JWT_ACCESS_EXPIRY=15m
+      - JWT_REFRESH_EXPIRY=7d
+      - BCRYPT_ROUNDS=12
+      - S3_ENDPOINT=http://minio:9000
+      - S3_ACCESS_KEY=minioadmin
+      - S3_SECRET_KEY=minioadmin
+      - S3_BUCKET_NAME=olympido-assets
+      - S3_REGION=us-east-1
+      - FRONTEND_URL=http://localhost:3000
+    volumes:
+      - backend_uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - olympido_network
+
+  # ------------------------------------------------------------
+  # 2. PostgreSQL 16 Relational Database
+  # ------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: olympido_postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "00000000"
+      POSTGRES_DB: olympido_dev
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d olympido_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - olympido_network
+
+  # ------------------------------------------------------------
+  # 3. Redis 7 High-Speed Cache & Sorted Sets
+  # ------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: olympido_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - olympido_network
+
+  # ------------------------------------------------------------
+  # 4. MinIO S3-Compatible Object Storage
+  # ------------------------------------------------------------
+  minio:
+    image: minio/minio:latest
+    container_name: olympido_minio
+    restart: unless-stopped
+    ports:
+      - "9000:9000" # S3 API
+      - "9001:9001" # Web Console UI
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - olympido_network
+
+# ------------------------------------------------------------
+# Networks & Persistent Volumes
+# ------------------------------------------------------------
+networks:
+  olympido_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  minio_data:
+    driver: local
+  backend_uploads:
+    driver: local
