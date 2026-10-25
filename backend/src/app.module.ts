@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AdminModule } from './admin/admin.module';
 import { AppController } from './app.controller';
@@ -12,10 +13,13 @@ import { RolesGuard } from './common/guards/roles.guard';
 import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { ContestsModule } from './contests/contests.module';
+import { GatewayModule } from './gateway/gateway.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { QuestionsModule } from './questions/questions.module';
 import { RedisModule } from './redis/redis.module';
+import { SubmissionsModule } from './submissions/submissions.module';
+import { UploadModule } from './upload/upload.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -24,6 +28,7 @@ import { UsersModule } from './users/users.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([
       {
         name: 'short',
@@ -38,12 +43,15 @@ import { UsersModule } from './users/users.module';
     ]),
     PrismaModule,
     RedisModule,
+    GatewayModule,
     AuthModule,
     UsersModule,
     OrganizationsModule,
     ContestsModule,
     QuestionsModule,
+    SubmissionsModule,
     AdminModule,
+    UploadModule,
   ],
   controllers: [AppController],
   providers: [

@@ -13,8 +13,11 @@ async function bootstrap() {
   app.setGlobalPrefix('api/v1');
 
   // Security middlewares
-  app.use(helmet());
+  app.use(helmet({ crossOriginResourcePolicy: false }));
   app.use(cookieParser());
+
+  // Static uploads directory
+  app.use('/uploads', (await import('express')).default.static((await import('path')).default.resolve(process.cwd(), 'uploads')));
 
   // CORS configuration
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';

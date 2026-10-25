@@ -19,6 +19,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { PaginationDto } from '../common/dto/pagination.dto';
+import { ContestSchedulerService } from './contest-scheduler.service';
 import { ContestsService } from './contests.service';
 import { ContestQueryDto } from './dto/contest-query.dto';
 import { CreateContestDto } from './dto/create-contest.dto';
@@ -27,7 +28,10 @@ import { UpdateContestDto } from './dto/update-contest.dto';
 @ApiTags('Contests')
 @Controller('contests')
 export class ContestsController {
-  constructor(private readonly contestsService: ContestsService) {}
+  constructor(
+    private readonly contestsService: ContestsService,
+    private readonly scheduler: ContestSchedulerService,
+  ) {}
 
   @Public()
   @Get()
@@ -35,6 +39,14 @@ export class ContestsController {
   @ApiResponse({ status: 200, description: 'Paginated contest list' })
   async findAll(@Query() query: ContestQueryDto) {
     return this.contestsService.findAll(query);
+  }
+
+  @Post('tick-schedule')
+  @Roles(UserRole.ADMIN, UserRole.ORGANIZER)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Trigger contest lifecycle status transitions check (Scheduled->Live, Live->Evaluation)' })
+  async tickSchedule() {
+    return this.scheduler.tickSchedule();
   }
 
   @Get('my/created')
