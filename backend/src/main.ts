@@ -67,6 +67,8 @@ async function bootstrap() {
     .addTag('Submissions', 'Live contest answer auto-save, bulk submission, and grading')
     .addTag('Results', 'Contest finalization, scorecards, and public credential verification')
     .addTag('Leaderboards', 'Weekly, monthly, and all-time global and categorical leaderboards')
+    .addTag('Social', 'Posts, scorecards sharing, likes, threaded comments, and follower feeds')
+    .addTag('Notifications', 'In-app notification history, unread counts, and mark-read actions')
     .addTag('Upload', 'Direct file upload and presigned URL generation')
     .addTag('Admin', 'Moderation queues for contests, organizations, and audit logs')
     .build();

@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Contest, ContestCategory, DifficultyLevel, Submission } from '@prisma/client';
 import * as crypto from 'crypto';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
 
@@ -47,6 +48,7 @@ export class RatingCalculationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   /**
@@ -307,6 +309,23 @@ export class RatingCalculationService {
 
     // 7. Update Redis Leaderboards (ZSET)
     await this.updateRedisLeaderboards(contest, computedResults);
+
+    // 8. Dispatch real-time RATING_CHANGE notifications
+    for (const res of computedResults) {
+      try {
+        const sign = res.ratingDelta >= 0 ? '+' : '';
+        await this.notificationsService.createNotification({
+          userId: res.userId,
+          type: 'RATING_CHANGE',
+          title: `Contest Results & Rating Update: ${contest.title}`,
+          message: `Rank #${res.finalRank} achieved! Points: +${res.pointsAwarded}. Rating: ${res.preRating} -> ${res.postRating} (${sign}${res.ratingDelta}).`,
+          referenceType: 'SCORECARD',
+          referenceId: res.scorecardQrHash,
+        });
+      } catch (err: any) {
+        this.logger.warn(`Failed to dispatch rating notification to user ${res.userId}: ${err.message}`);
+      }
+    }
 
     return computedResults;
   }

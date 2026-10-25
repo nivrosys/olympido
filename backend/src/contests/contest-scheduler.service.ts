@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { ContestStatus } from '@prisma/client';
 import { ContestGateway } from '../gateway/contest.gateway';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -11,6 +12,7 @@ export class ContestSchedulerService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly gateway: ContestGateway,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   @Cron(CronExpression.EVERY_MINUTE)
@@ -39,6 +41,26 @@ export class ContestSchedulerService {
         title: contest.title,
         durationMinutes: contest.durationMinutes,
       });
+
+      // Dispatch real-time CONTEST_LIVE notification to all registered participants
+      const registrations = await this.prisma.contestRegistration.findMany({
+        where: { contestId: contest.id },
+        select: { userId: true },
+      });
+      for (const reg of registrations) {
+        await this.notificationsService
+          .createNotification({
+            userId: reg.userId,
+            type: 'CONTEST_LIVE',
+            title: `Contest is LIVE: ${contest.title}`,
+            message: `The Olympiad contest is now LIVE! You have ${contest.durationMinutes} minutes to compete.`,
+            referenceType: 'CONTEST',
+            referenceId: contest.id,
+          })
+          .catch((err) => {
+            this.logger.warn(`Failed to notify participant ${reg.userId}: ${err.message}`);
+          });
+      }
     }
 
     // 2. LIVE -> EVALUATION

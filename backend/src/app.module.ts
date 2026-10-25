@@ -15,11 +15,13 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 import { ContestsModule } from './contests/contests.module';
 import { GatewayModule } from './gateway/gateway.module';
 import { LeaderboardsModule } from './leaderboards/leaderboards.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { QuestionsModule } from './questions/questions.module';
 import { RedisModule } from './redis/redis.module';
 import { ResultsModule } from './results/results.module';
+import { SocialModule } from './social/social.module';
 import { SubmissionsModule } from './submissions/submissions.module';
 import { UploadModule } from './upload/upload.module';
 import { UsersModule } from './users/users.module';
@@ -46,6 +48,7 @@ import { UsersModule } from './users/users.module';
     PrismaModule,
     RedisModule,
     GatewayModule,
+    NotificationsModule,
     AuthModule,
     UsersModule,
     OrganizationsModule,
@@ -54,6 +57,7 @@ import { UsersModule } from './users/users.module';
     SubmissionsModule,
     ResultsModule,
     LeaderboardsModule,
+    SocialModule,
     AdminModule,
     UploadModule,
   ],

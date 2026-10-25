@@ -165,4 +165,14 @@ export class ContestGateway implements OnGatewayConnection, OnGatewayDisconnect 
       }
     }
   }
+
+  sendNotificationToUser(userId: string, notification: any) {
+    const sockets = this.userSockets.get(userId);
+    if (sockets && sockets.size > 0) {
+      for (const socketId of sockets) {
+        this.server.to(socketId).emit('notification:new', notification);
+      }
+      this.logger.log(`Pushed real-time notification to user ${userId} across ${sockets.size} active socket(s)`);
+    }
+  }
 }
