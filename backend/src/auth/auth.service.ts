@@ -8,15 +8,18 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { TokenType, UserRole } from '@prisma/client';
+import { OrgStatus, TokenType, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
+import { isDisposableDomain } from '../common/utils/domain-validator.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { RegisterOrganizerDto } from './dto/register-organizer.dto';
 import { RegisterStudentDto } from './dto/register-student.dto';
+import { RegisterTeacherDto } from './dto/register-teacher.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { JwtPayload } from './strategies/jwt.strategy';
@@ -125,6 +128,189 @@ export class AuthService {
       message: 'Registration successful. Please check your email to verify your account.',
       user: result.user,
       verificationToken: result.verificationToken, // Expose for testing/demo
+    };
+  }
+
+  async registerTeacher(dto: RegisterTeacherDto) {
+    const org = await this.prisma.organization.findUnique({
+      where: { id: dto.organizationId },
+    });
+
+    if (!org) {
+      throw new NotFoundException('Selected organization does not exist.');
+    }
+
+    if (org.status !== OrgStatus.VERIFIED) {
+      throw new BadRequestException('Affiliated organization is not yet verified.');
+    }
+
+    const existing = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: dto.email.toLowerCase().trim() },
+          { username: dto.username.toLowerCase().trim() },
+        ],
+      },
+    });
+
+    if (existing) {
+      if (existing.email.toLowerCase() === dto.email.toLowerCase().trim()) {
+        throw new ConflictException('An account with this email address already exists.');
+      }
+      throw new ConflictException('This username is already taken.');
+    }
+
+    const passwordHash = await bcrypt.hash(dto.password, this.bcryptRounds);
+    const verificationRawToken = uuidv4();
+    const tokenHash = crypto.createHash('sha256').update(verificationRawToken).digest('hex');
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          email: dto.email.toLowerCase().trim(),
+          username: dto.username.toLowerCase().trim(),
+          fullName: dto.fullName.trim(),
+          passwordHash,
+          role: UserRole.TEACHER,
+          institutionName: org.name,
+          isEmailVerified: false,
+          isActive: true,
+        },
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          fullName: true,
+          role: true,
+          institutionName: true,
+          isEmailVerified: true,
+          createdAt: true,
+        },
+      });
+
+      await tx.teacherOrganization.create({
+        data: {
+          userId: user.id,
+          organizationId: org.id,
+          isApproved: false, // Pending org approval
+        },
+      });
+
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      await tx.authToken.create({
+        data: {
+          userId: user.id,
+          tokenType: TokenType.EMAIL_VERIFICATION,
+          tokenHash,
+          expiresAt,
+        },
+      });
+
+      return { user, verificationToken: verificationRawToken };
+    });
+
+    this.logger.log(`Teacher registered: ${result.user.email} -> ${org.name}`);
+
+    return {
+      message:
+        'Teacher registered successfully. Your affiliation request is pending organization approval.',
+      user: result.user,
+      organization: { id: org.id, name: org.name },
+      verificationToken: result.verificationToken,
+    };
+  }
+
+  async registerOrganizer(dto: RegisterOrganizerDto) {
+    const domain = dto.officialDomain.toLowerCase().trim();
+    if (isDisposableDomain(domain)) {
+      throw new BadRequestException('Disposable or temporary email domains are not permitted.');
+    }
+
+    const existingOrg = await this.prisma.organization.findUnique({
+      where: { officialDomain: domain },
+    });
+    if (existingOrg) {
+      throw new ConflictException(
+        `An organization with domain '${domain}' is already registered on Olympido.`,
+      );
+    }
+
+    const existing = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: dto.email.toLowerCase().trim() },
+          { username: dto.username.toLowerCase().trim() },
+        ],
+      },
+    });
+
+    if (existing) {
+      if (existing.email.toLowerCase() === dto.email.toLowerCase().trim()) {
+        throw new ConflictException('An account with this email address already exists.');
+      }
+      throw new ConflictException('This username is already taken.');
+    }
+
+    const passwordHash = await bcrypt.hash(dto.password, this.bcryptRounds);
+    const verificationRawToken = uuidv4();
+    const tokenHash = crypto.createHash('sha256').update(verificationRawToken).digest('hex');
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const org = await tx.organization.create({
+        data: {
+          name: dto.organizationName.trim(),
+          officialDomain: domain,
+          contactEmail: (dto.contactEmail || dto.email).toLowerCase().trim(),
+          websiteUrl: dto.websiteUrl?.trim() || null,
+          accreditationDocumentUrl: dto.accreditationDocumentUrl?.trim() || null,
+          status: OrgStatus.PENDING_VERIFICATION,
+        },
+      });
+
+      const user = await tx.user.create({
+        data: {
+          email: dto.email.toLowerCase().trim(),
+          username: dto.username.toLowerCase().trim(),
+          fullName: dto.fullName.trim(),
+          passwordHash,
+          role: UserRole.ORGANIZER,
+          institutionName: org.name,
+          isEmailVerified: false,
+          isActive: true,
+        },
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          fullName: true,
+          role: true,
+          institutionName: true,
+          isEmailVerified: true,
+          createdAt: true,
+        },
+      });
+
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      await tx.authToken.create({
+        data: {
+          userId: user.id,
+          tokenType: TokenType.EMAIL_VERIFICATION,
+          tokenHash,
+          expiresAt,
+        },
+      });
+
+      return { user, org, verificationToken: verificationRawToken };
+    });
+
+    this.logger.log(`Organizer & Organization registered: ${result.user.email} (${result.org.name})`);
+
+    return {
+      message:
+        'Organizer account and organization registered successfully. Pending platform admin review.',
+      user: result.user,
+      organization: result.org,
+      verificationToken: result.verificationToken,
     };
   }
 

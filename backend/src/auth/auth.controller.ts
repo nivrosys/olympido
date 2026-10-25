@@ -18,7 +18,9 @@ import { AuthService } from './auth.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { RegisterOrganizerDto } from './dto/register-organizer.dto';
 import { RegisterStudentDto } from './dto/register-student.dto';
+import { RegisterTeacherDto } from './dto/register-teacher.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 
@@ -34,6 +36,27 @@ export class AuthController {
   @ApiResponse({ status: 409, description: 'Email or username already exists' })
   async registerStudent(@Body() dto: RegisterStudentDto) {
     return this.authService.registerStudent(dto);
+  }
+
+  @Public()
+  @Post('register/teacher')
+  @ApiOperation({ summary: 'Register a teacher account with institutional affiliation' })
+  @ApiResponse({ status: 201, description: 'Teacher registered and affiliation requested' })
+  @ApiResponse({ status: 400, description: 'Organization not verified' })
+  @ApiResponse({ status: 404, description: 'Organization not found' })
+  @ApiResponse({ status: 409, description: 'Email or username already exists' })
+  async registerTeacher(@Body() dto: RegisterTeacherDto) {
+    return this.authService.registerTeacher(dto);
+  }
+
+  @Public()
+  @Post('register/organizer')
+  @ApiOperation({ summary: 'Register an organizer and institution for platform verification' })
+  @ApiResponse({ status: 201, description: 'Organizer and organization registered' })
+  @ApiResponse({ status: 400, description: 'Invalid or disposable email domain' })
+  @ApiResponse({ status: 409, description: 'Email, username, or organization domain already registered' })
+  async registerOrganizer(@Body() dto: RegisterOrganizerDto) {
+    return this.authService.registerOrganizer(dto);
   }
 
   @Public()

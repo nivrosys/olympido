@@ -53,6 +53,10 @@ async function bootstrap() {
     )
     .addTag('Auth', 'Authentication, registration, email verification, and tokens')
     .addTag('Users', 'User profiles and student statistics')
+    .addTag('Organizations', 'Institutional onboarding and teacher affiliations')
+    .addTag('Contests', 'Contest creation, lifecycle, and student registration')
+    .addTag('Questions', 'Problem set creation, reordering, and inspection')
+    .addTag('Admin', 'Moderation queues for contests, organizations, and audit logs')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
