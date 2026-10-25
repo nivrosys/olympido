@@ -7,6 +7,21 @@ export interface PendingContest extends Competition {
   adminReviewStatus: "pending" | "approved" | "changes_requested" | "rejected";
   adminNotes?: string;
   questionCount: number;
+  schoolInfo?: {
+    schoolName: string;
+    department: string;
+    domain: string;
+    facultyAdvisor: string;
+    accreditationProof?: string;
+  };
+  studentEligibility?: {
+    targetLevels: string[];
+    minRating: number;
+    maxCapacity: number;
+    geography: "Global Open" | "Regional Partner Schools" | "Invited Institutions";
+  };
+  plagiarismScore?: number;
+  aiSimilarityScore?: number;
 }
 
 export const INITIAL_PENDING_CONTESTS: PendingContest[] = [
@@ -23,6 +38,19 @@ export const INITIAL_PENDING_CONTESTS: PendingContest[] = [
       isVerified: true,
       type: "University",
     },
+    schoolInfo: {
+      schoolName: "Stanford University",
+      department: "Department of Mathematics & Pure Science",
+      domain: "stanford.edu",
+      facultyAdvisor: "Prof. Kenneth Henderson, PhD",
+      accreditationProof: "Stanford-Provost-Accreditation-2026.pdf",
+    },
+    studentEligibility: {
+      targetLevels: ["Senior High School", "Freshman Undergraduate"],
+      minRating: 1400,
+      maxCapacity: 2500,
+      geography: "Global Open",
+    },
     status: "upcoming",
     statusLabel: "Pending Admin Approval",
     difficulty: "Regional Olympiad",
@@ -37,6 +65,8 @@ export const INITIAL_PENDING_CONTESTS: PendingContest[] = [
     submittedAt: "2 hours ago",
     adminReviewStatus: "pending",
     questionCount: 25,
+    plagiarismScore: 99.4,
+    aiSimilarityScore: 2.1,
   },
   {
     id: "phys-optics-2026",
@@ -50,6 +80,19 @@ export const INITIAL_PENDING_CONTESTS: PendingContest[] = [
       domain: "cam.ac.uk",
       isVerified: true,
       type: "Olympiad Committee",
+    },
+    schoolInfo: {
+      schoolName: "University of Cambridge",
+      department: "Cavendish Laboratory & Theoretical Physics",
+      domain: "cam.ac.uk",
+      facultyAdvisor: "Dr. Eleanor Vance, FRS",
+      accreditationProof: "Cambridge-Board-Charter-2026.pdf",
+    },
+    studentEligibility: {
+      targetLevels: ["Undergraduate", "Advanced High School"],
+      minRating: 1800,
+      maxCapacity: 1200,
+      geography: "Global Open",
     },
     status: "upcoming",
     statusLabel: "Pending Admin Approval",
@@ -65,6 +108,8 @@ export const INITIAL_PENDING_CONTESTS: PendingContest[] = [
     submittedAt: "5 hours ago",
     adminReviewStatus: "pending",
     questionCount: 15,
+    plagiarismScore: 98.7,
+    aiSimilarityScore: 4.5,
   },
 ];
 
@@ -99,91 +144,93 @@ export const getPendingContests = (): PendingContest[] => {
   }
 };
 
-export const submitNewContestForApproval = (contest: Partial<PendingContest>): PendingContest => {
-  const pending = getPendingContests();
-  const newContest: PendingContest = {
+export const submitNewContestForApproval = (newContest: Partial<PendingContest>): PendingContest => {
+  const currentPending = getPendingContests();
+
+  const formattedContest: PendingContest = {
     id: `contest-${Date.now()}`,
-    title: contest.title || "Untitled Olympiad",
-    slug: (contest.title || "untitled-olympiad").toLowerCase().replace(/\s+/g, "-"),
-    category: contest.category || "physics",
-    categoryLabel: contest.categoryLabel || "Physics",
-    bannerGradient: contest.bannerGradient || "from-purple-600 via-indigo-600 to-blue-800",
-    organizer: contest.organizer || {
-      name: "Stanford Physics Club",
-      domain: "stanford.edu",
+    title: newContest.title || "Custom Academic Olympiad 2026",
+    slug: (newContest.title || "custom-olympiad").toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+    category: newContest.category || "physics",
+    categoryLabel: newContest.categoryLabel || "Physics",
+    bannerGradient: newContest.bannerGradient || "from-purple-600 via-indigo-600 to-blue-800",
+    organizer: newContest.organizer || {
+      name: "Verified Institutional Organizer",
+      domain: "school.edu",
       isVerified: true,
       type: "University",
     },
+    schoolInfo: newContest.schoolInfo,
+    studentEligibility: newContest.studentEligibility,
     status: "upcoming",
     statusLabel: "Pending Admin Approval",
-    difficulty: contest.difficulty || "Regional Olympiad",
-    pointsAwarded: contest.pointsAwarded || 750,
-    durationMinutes: contest.durationMinutes || 120,
+    difficulty: newContest.difficulty || "National Olympiad",
+    pointsAwarded: newContest.pointsAwarded || 1000,
+    durationMinutes: newContest.durationMinutes || 120,
     participantsCount: 0,
-    registrationDeadline: contest.registrationDeadline || "Dec 20, 2026",
-    contestDate: contest.contestDate || "Dec 25, 2026 • 14:00 UTC",
-    description: contest.description || "Academic Olympiad organized under institutional review.",
-    prizes: contest.prizes || "Medals, Certificates & Verifiable Scorecards",
+    isFeatured: false,
+    registrationDeadline: newContest.registrationDeadline || "Dec 15, 2026",
+    contestDate: newContest.contestDate || "Dec 20, 2026 • 14:00 UTC",
+    description: newContest.description || "Academic contest configured with verified school criteria.",
+    prizes: newContest.prizes || "Official Digital Scorecards & Merit Medals",
     submittedAt: "Just now",
     adminReviewStatus: "pending",
-    questionCount: contest.questionCount || 10,
+    questionCount: newContest.questionCount || 10,
+    plagiarismScore: 99.1,
+    aiSimilarityScore: 3.2,
   };
 
-  const updated = [newContest, ...pending];
+  const updatedPending = [formattedContest, ...currentPending];
   if (typeof window !== "undefined") {
-    localStorage.setItem(STORAGE_KEY_PENDING, JSON.stringify(updated));
+    localStorage.setItem(STORAGE_KEY_PENDING, JSON.stringify(updatedPending));
   }
-  return newContest;
+  return formattedContest;
 };
 
 export const approveContestByAdmin = (contestId: string): Competition | null => {
   const pending = getPendingContests();
-  const contest = pending.find((c) => c.id === contestId);
-  if (!contest) return null;
+  const contestIndex = pending.findIndex((c) => c.id === contestId);
+  if (contestIndex === -1) return null;
 
-  // 1. Remove or mark approved in pending
-  const updatedPending = pending.map((c) =>
-    c.id === contestId ? { ...c, adminReviewStatus: "approved" as const, statusLabel: "Approved & Published" } : c
-  );
-  if (typeof window !== "undefined") {
-    localStorage.setItem(STORAGE_KEY_PENDING, JSON.stringify(updatedPending));
-  }
+  const targetContest = pending[contestIndex];
+  targetContest.adminReviewStatus = "approved";
+  targetContest.status = "registration_open";
+  targetContest.statusLabel = "Registration Open";
 
-  // 2. Add to public catalog
-  const publicList = getPublicContests();
-  const approvedPublic: Competition = {
-    ...contest,
-    status: "registration_open",
-    statusLabel: "Registration Open",
-    isFeatured: true,
-  };
-  const updatedPublic = [approvedPublic, ...publicList];
   if (typeof window !== "undefined") {
+    localStorage.setItem(STORAGE_KEY_PENDING, JSON.stringify(pending));
+    const publicContests = getPublicContests();
+    const updatedPublic = [targetContest, ...publicContests.filter((c) => c.id !== contestId)];
     localStorage.setItem(STORAGE_KEY_PUBLIC, JSON.stringify(updatedPublic));
   }
-  return approvedPublic;
+
+  return targetContest;
 };
 
-export const rejectContestByAdmin = (contestId: string, reason: string): void => {
+export const rejectContestByAdmin = (contestId: string, reason: string): boolean => {
   const pending = getPendingContests();
-  const updated = pending.map((c) =>
-    c.id === contestId
-      ? { ...c, adminReviewStatus: "rejected" as const, adminNotes: reason, statusLabel: "Rejected" }
-      : c
-  );
+  const contest = pending.find((c) => c.id === contestId);
+  if (!contest) return false;
+
+  contest.adminReviewStatus = "rejected";
+  contest.adminNotes = reason;
+
   if (typeof window !== "undefined") {
-    localStorage.setItem(STORAGE_KEY_PENDING, JSON.stringify(updated));
+    localStorage.setItem(STORAGE_KEY_PENDING, JSON.stringify(pending));
   }
+  return true;
 };
 
-export const requestChangesByAdmin = (contestId: string, notes: string): void => {
+export const requestChangesByAdmin = (contestId: string, notes: string): boolean => {
   const pending = getPendingContests();
-  const updated = pending.map((c) =>
-    c.id === contestId
-      ? { ...c, adminReviewStatus: "changes_requested" as const, adminNotes: notes, statusLabel: "Changes Requested" }
-      : c
-  );
+  const contest = pending.find((c) => c.id === contestId);
+  if (!contest) return false;
+
+  contest.adminReviewStatus = "changes_requested";
+  contest.adminNotes = notes;
+
   if (typeof window !== "undefined") {
-    localStorage.setItem(STORAGE_KEY_PENDING, JSON.stringify(updated));
+    localStorage.setItem(STORAGE_KEY_PENDING, JSON.stringify(pending));
   }
+  return true;
 };

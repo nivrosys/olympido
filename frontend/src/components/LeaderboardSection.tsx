@@ -1,19 +1,21 @@
 "use client";
 
 import React, { useState } from "react";
-import { 
-  Trophy, 
-  Medal, 
-  TrendingUp, 
-  Award, 
-  QrCode, 
-  Share2, 
-  CheckCircle2, 
-  Sparkles,
-  ChevronRight,
-  ShieldCheck,
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Trophy,
+  TrendingUp,
+  TrendingDown,
+  Award,
+  QrCode,
+  Share2,
+  CheckCircle2,
   Flame,
-  X
+  X,
+  Crown,
+  Minus,
+  Sparkles,
+  ExternalLink,
 } from "lucide-react";
 
 interface LeaderboardUser {
@@ -24,7 +26,7 @@ interface LeaderboardUser {
   points: number;
   rating: number;
   ratingTier: string;
-  trend: number; // positive = positions gained
+  trend: number;
   avatarGradient: string;
   recentContest: {
     title: string;
@@ -38,7 +40,6 @@ interface LeaderboardUser {
 
 export const LeaderboardSection: React.FC = () => {
   const [timeframe, setTimeframe] = useState<"weekly" | "monthly" | "all_time">("weekly");
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedScorecardUser, setSelectedScorecardUser] = useState<LeaderboardUser | null>(null);
 
   const mockLeaders: LeaderboardUser[] = [
@@ -70,7 +71,7 @@ export const LeaderboardSection: React.FC = () => {
       rating: 2360,
       ratingTier: "Master",
       trend: 1,
-      avatarGradient: "from-slate-300 to-slate-500",
+      avatarGradient: "from-slate-400 to-slate-600",
       recentContest: {
         title: "National Youth Physics Olympiad 2026",
         score: "94/100",
@@ -139,276 +140,322 @@ export const LeaderboardSection: React.FC = () => {
     },
   ];
 
+  const TrendIcon = ({ trend }: { trend: number }) => {
+    if (trend > 0)
+      return (
+        <span className="flex items-center gap-0.5 text-xs font-bold text-emerald-600">
+          <TrendingUp className="w-3.5 h-3.5" />+{trend}
+        </span>
+      );
+    if (trend < 0)
+      return (
+        <span className="flex items-center gap-0.5 text-xs font-bold text-rose-600">
+          <TrendingDown className="w-3.5 h-3.5" />
+          {trend}
+        </span>
+      );
+    return (
+      <span className="flex items-center gap-0.5 text-xs font-bold text-slate-400">
+        <Minus className="w-3.5 h-3.5" />0
+      </span>
+    );
+  };
+
   return (
-    <section id="leaderboard-preview" className="py-16 bg-slate-50 border-t border-gray-100">
+    <section id="leaderboard-preview" className="py-20 border-t border-slate-200/80 bg-slate-50/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 mb-2">
-              <Trophy className="w-3.5 h-3.5 text-amber-600 fill-amber-600" />
-              <span>Real-Time Olympiad Standings</span>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mb-3 bg-amber-50 text-amber-800 border border-amber-200 shadow-2xs">
+              <Trophy className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+              <span>Real-Time Rating Ladders</span>
             </div>
-            <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">
-              Global Olympiad Leaderboards
+            <h2
+              className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900"
+              style={{ fontFamily: "'Outfit', sans-serif" }}
+            >
+              Global Student Standings
             </h2>
-            <p className="text-sm text-gray-500 mt-1 max-w-xl">
-              Track top performers, weekly rating surges, and verified digital scorecards calculated from accredited contests.
+            <p className="text-sm sm:text-base text-slate-600 mt-2 max-w-xl">
+              Performance points are calculated from official accredited Olympiads, weighted by difficulty and verified through anti-cheat proctoring.
             </p>
           </div>
 
-          {/* Timeframe Filter Buttons */}
-          <div className="flex items-center p-1 bg-white border border-gray-200 rounded-2xl shadow-2xs">
-            <button
-              onClick={() => setTimeframe("weekly")}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                timeframe === "weekly"
-                  ? "bg-purple-600 text-white shadow-xs"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              This Weekend
-            </button>
-            <button
-              onClick={() => setTimeframe("monthly")}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                timeframe === "monthly"
-                  ? "bg-purple-600 text-white shadow-xs"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              This Month
-            </button>
-            <button
-              onClick={() => setTimeframe("all_time")}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                timeframe === "all_time"
-                  ? "bg-purple-600 text-white shadow-xs"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              All-Time Hall of Fame
-            </button>
-          </div>
-        </div>
-
-        {/* Podium Top 3 Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 items-end">
-          
-          {/* Rank 2 (Silver) */}
-          <div className="bg-white rounded-2xl border border-gray-200/90 p-5 shadow-xs order-2 md:order-1 text-center relative overflow-hidden">
-            <div className="absolute top-0 inset-x-0 h-1.5 bg-slate-400" />
-            <div className="w-14 h-14 rounded-2xl mx-auto mb-3 flex items-center justify-center text-white font-extrabold text-lg shadow-md bg-gradient-to-tr from-slate-400 to-slate-600">
-              #2
-            </div>
-            <h3 className="font-bold text-gray-900">{mockLeaders[1].name}</h3>
-            <p className="text-xs text-gray-500 mb-3">{mockLeaders[1].institution}</p>
-            <div className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-800 mb-3">
-              {mockLeaders[1].points.toLocaleString()} Points • Rating {mockLeaders[1].rating}
-            </div>
-            <div>
+          {/* Timeframe selector with depth */}
+          <div className="flex items-center p-1 rounded-xl bg-white border border-slate-200 shadow-xs self-start md:self-auto">
+            {(["weekly", "monthly", "all_time"] as const).map((tf) => (
               <button
-                onClick={() => setSelectedScorecardUser(mockLeaders[1])}
-                className="w-full py-2 rounded-xl text-xs font-bold bg-purple-50 text-purple-700 hover:bg-purple-600 hover:text-white transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                key={tf}
+                onClick={() => setTimeframe(tf)}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  timeframe === tf
+                    ? "bg-purple-600 text-white shadow-sm shadow-purple-500/25"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
               >
-                <Award className="w-3.5 h-3.5" /> View Scorecard
+                {tf === "weekly" ? "Weekly" : tf === "monthly" ? "Monthly" : "All-Time"}
               </button>
-            </div>
-          </div>
-
-          {/* Rank 1 (Gold - Elevated) */}
-          <div className="bg-white rounded-3xl border-2 border-amber-300 p-6 shadow-xl order-1 md:order-2 text-center relative overflow-hidden transform md:-translate-y-3">
-            <div className="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500" />
-            <span className="inline-flex items-center gap-1 text-[11px] font-extrabold uppercase px-3 py-0.5 rounded-full bg-amber-100 text-amber-900 mb-2">
-              <Trophy className="w-3 h-3 text-amber-600 fill-amber-600" /> Peak Champion
-            </span>
-            <div className="w-16 h-16 rounded-2xl mx-auto mb-3 flex items-center justify-center text-white font-extrabold text-xl shadow-lg bg-gradient-to-tr from-amber-400 to-yellow-600 ring-4 ring-amber-100">
-              👑
-            </div>
-            <h3 className="font-extrabold text-xl text-gray-900">{mockLeaders[0].name}</h3>
-            <p className="text-xs text-gray-500 mb-4">{mockLeaders[0].institution}</p>
-            <div className="inline-block px-4 py-1.5 rounded-full text-sm font-extrabold bg-amber-400/20 text-amber-900 border border-amber-300 mb-4">
-              {mockLeaders[0].points.toLocaleString()} Points • Rating {mockLeaders[0].rating}
-            </div>
-            <div>
-              <button
-                onClick={() => setSelectedScorecardUser(mockLeaders[0])}
-                className="w-full py-2.5 rounded-xl text-xs font-extrabold bg-purple-600 text-white hover:bg-purple-700 shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <Award className="w-4 h-4 text-amber-300" /> View Verified Scorecard
-              </button>
-            </div>
-          </div>
-
-          {/* Rank 3 (Bronze) */}
-          <div className="bg-white rounded-2xl border border-gray-200/90 p-5 shadow-xs order-3 text-center relative overflow-hidden">
-            <div className="absolute top-0 inset-x-0 h-1.5 bg-amber-700" />
-            <div className="w-14 h-14 rounded-2xl mx-auto mb-3 flex items-center justify-center text-white font-extrabold text-lg shadow-md bg-gradient-to-tr from-amber-700 to-amber-900">
-              #3
-            </div>
-            <h3 className="font-bold text-gray-900">{mockLeaders[2].name}</h3>
-            <p className="text-xs text-gray-500 mb-3">{mockLeaders[2].institution}</p>
-            <div className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-900 mb-3">
-              {mockLeaders[2].points.toLocaleString()} Points • Rating {mockLeaders[2].rating}
-            </div>
-            <div>
-              <button
-                onClick={() => setSelectedScorecardUser(mockLeaders[2])}
-                className="w-full py-2 rounded-xl text-xs font-bold bg-purple-50 text-purple-700 hover:bg-purple-600 hover:text-white transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <Award className="w-3.5 h-3.5" /> View Scorecard
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Table for Rank 4 & 5 with interactive scorecard buttons */}
-        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-xs">
-          <div className="p-4 bg-gray-50/70 border-b border-gray-100 flex items-center justify-between text-xs font-bold text-gray-500 uppercase tracking-wider">
-            <div className="flex items-center gap-6">
-              <span className="w-8 text-center">Rank</span>
-              <span>Student & Institution</span>
-            </div>
-            <div className="flex items-center gap-8">
-              <span>Rating & Tier</span>
-              <span className="w-24 text-right">Points</span>
-              <span className="w-28 text-right">Scorecard</span>
-            </div>
-          </div>
-
-          <div className="divide-y divide-gray-100">
-            {mockLeaders.slice(3).map((student) => (
-              <div
-                key={student.rank}
-                className="p-4 flex items-center justify-between hover:bg-purple-50/30 transition-colors"
-              >
-                <div className="flex items-center gap-6">
-                  <span className="w-8 text-center font-extrabold text-sm text-gray-700">
-                    #{student.rank}
-                  </span>
-                  <div>
-                    <h4 className="font-bold text-sm text-gray-900">{student.name}</h4>
-                    <span className="text-xs text-gray-500">{student.institution}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-8 text-xs">
-                  <div className="text-right hidden sm:block">
-                    <span className="font-bold text-purple-700">{student.rating}</span>
-                    <span className="text-gray-400 block text-[11px]">{student.ratingTier}</span>
-                  </div>
-                  <div className="w-24 text-right font-extrabold text-gray-900 text-sm">
-                    {student.points.toLocaleString()} pts
-                  </div>
-                  <div className="w-28 text-right">
-                    <button
-                      onClick={() => setSelectedScorecardUser(student)}
-                      className="px-3 py-1.5 rounded-lg text-xs font-bold bg-gray-100 hover:bg-purple-600 hover:text-white transition-colors"
-                    >
-                      Scorecard
-                    </button>
-                  </div>
-                </div>
-              </div>
             ))}
           </div>
         </div>
 
-      </div>
-
-      {/* Verifiable Digital Scorecard Modal */}
-      {selectedScorecardUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div 
-            className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden p-6 sm:p-8 animate-in zoom-in-95 duration-200 border-2 border-purple-200"
-            onClick={(e) => e.stopPropagation()}
+        {/* Podium Top 3 Showcase with Real Depth */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 items-end">
+          {/* Rank 2 (Silver) */}
+          <motion.div
+            whileHover={{ y: -4 }}
+            className="order-2 md:order-1 rounded-2xl p-6 bg-white border border-slate-200 shadow-[0_4px_20px_-2px_rgba(15,23,42,0.06)] relative flex flex-col items-center text-center"
           >
-            {/* Close Button */}
+            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-black text-slate-600 border border-slate-200 mb-3 shadow-xs">
+              2
+            </div>
+            <div className={`w-16 h-16 rounded-2xl bg-gradient-to-tr ${mockLeaders[1].avatarGradient} flex items-center justify-center text-white font-extrabold text-xl shadow-md mb-3`}>
+              ER
+            </div>
+            <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 mb-2">
+              Silver • {mockLeaders[1].ratingTier}
+            </span>
+            <h3 className="font-extrabold text-lg text-slate-900" style={{ fontFamily: "'Outfit', sans-serif" }}>
+              {mockLeaders[1].name}
+            </h3>
+            <p className="text-xs text-slate-500 mb-3">{mockLeaders[1].institution}</p>
+            <div className="w-full pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold">
+              <span className="text-slate-500">{mockLeaders[1].rating} Elo</span>
+              <span className="text-purple-700 font-extrabold">{mockLeaders[1].points.toLocaleString()} pts</span>
+            </div>
             <button
-              onClick={() => setSelectedScorecardUser(null)}
-              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-colors"
+              onClick={() => setSelectedScorecardUser(mockLeaders[1])}
+              className="mt-3 w-full py-2 rounded-xl text-xs font-bold bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
             >
-              <X className="w-4 h-4" />
+              <QrCode className="w-3.5 h-3.5" />
+              <span>Scorecard</span>
             </button>
+          </motion.div>
 
-            {/* Scorecard Header */}
-            <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-100">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center text-amber-300">
-                  <Flame className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="font-extrabold text-sm text-gray-900">OLYMPIDO SCORECARD</h4>
-                  <span className="text-[10px] text-gray-400 font-mono">ID: {selectedScorecardUser.recentContest.verifyHash}</span>
-                </div>
-              </div>
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                <CheckCircle2 className="w-3 h-3" /> Cryptographically Verified
-              </span>
+          {/* Rank 1 (Gold Champion) */}
+          <motion.div
+            whileHover={{ y: -6 }}
+            className="order-1 md:order-2 rounded-2xl p-7 bg-gradient-to-b from-amber-50/80 to-white border-2 border-amber-300 shadow-[0_8px_30px_-4px_rgba(245,158,11,0.2)] relative flex flex-col items-center text-center -translate-y-2"
+          >
+            <div className="absolute -top-4 w-9 h-9 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-300 flex items-center justify-center shadow-md shadow-amber-500/40 border border-white">
+              <Crown className="w-5 h-5 text-slate-950 fill-slate-950" />
             </div>
-
-            {/* Student & Contest Identity */}
-            <div className="mb-6">
-              <span className="text-xs text-gray-400 font-bold uppercase tracking-wider block mb-1">
-                Participant
-              </span>
-              <h3 className="text-xl font-extrabold text-gray-900">{selectedScorecardUser.name}</h3>
-              <p className="text-xs text-purple-700 font-medium">{selectedScorecardUser.institution}</p>
+            <div className={`w-20 h-20 rounded-2xl bg-gradient-to-tr ${mockLeaders[0].avatarGradient} flex items-center justify-center text-white font-extrabold text-2xl shadow-lg shadow-amber-500/30 mb-3 mt-1 ring-4 ring-amber-200`}>
+              MV
             </div>
-
-            <div className="p-3.5 bg-gray-50 rounded-2xl border border-gray-200/80 mb-6">
-              <span className="text-[11px] text-gray-400 uppercase font-bold tracking-wider block mb-1">
-                Contest Accomplishment
-              </span>
-              <div className="font-bold text-sm text-gray-900 mb-1">
-                {selectedScorecardUser.recentContest.title}
-              </div>
-              <div className="text-xs text-gray-500">
-                Placement: Top {selectedScorecardUser.recentContest.percentile} Percentile
-              </div>
+            <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 mb-2 flex items-center gap-1">
+              <Sparkles className="w-3 h-3 text-amber-600" />
+              Peak Champion • {mockLeaders[0].ratingTier}
+            </span>
+            <h3 className="font-extrabold text-xl text-slate-900" style={{ fontFamily: "'Outfit', sans-serif" }}>
+              {mockLeaders[0].name}
+            </h3>
+            <p className="text-xs text-slate-500 mb-3">{mockLeaders[0].institution}</p>
+            <div className="w-full pt-3.5 border-t border-amber-200/80 flex items-center justify-between text-xs font-bold">
+              <span className="text-slate-600">{mockLeaders[0].rating} Elo</span>
+              <span className="text-purple-700 font-extrabold text-sm">{mockLeaders[0].points.toLocaleString()} pts</span>
             </div>
+            <button
+              onClick={() => setSelectedScorecardUser(mockLeaders[0])}
+              className="mt-3.5 w-full py-2.5 rounded-xl text-xs font-extrabold bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-300 hover:to-yellow-300 text-slate-950 shadow-md shadow-amber-500/25 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              <QrCode className="w-3.5 h-3.5" />
+              <span>Verified Scorecard</span>
+            </button>
+          </motion.div>
 
-            {/* Performance Metric Badges */}
-            <div className="grid grid-cols-3 gap-3 mb-6 text-center">
-              <div className="p-3 rounded-2xl bg-purple-50 border border-purple-100">
-                <span className="text-[11px] font-bold text-purple-700 uppercase block mb-1">Raw Score</span>
-                <span className="text-lg font-extrabold text-gray-900">{selectedScorecardUser.recentContest.score}</span>
-              </div>
-              <div className="p-3 rounded-2xl bg-amber-50 border border-amber-100">
-                <span className="text-[11px] font-bold text-amber-800 uppercase block mb-1">Points Gained</span>
-                <span className="text-lg font-extrabold text-amber-900">+{selectedScorecardUser.recentContest.pointsGained}</span>
-              </div>
-              <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-100">
-                <span className="text-[11px] font-bold text-emerald-700 uppercase block mb-1">Rating Delta</span>
-                <span className="text-lg font-extrabold text-emerald-800">+{selectedScorecardUser.recentContest.ratingDelta}</span>
-              </div>
+          {/* Rank 3 (Bronze) */}
+          <motion.div
+            whileHover={{ y: -4 }}
+            className="order-3 md:order-3 rounded-2xl p-6 bg-white border border-slate-200 shadow-[0_4px_20px_-2px_rgba(15,23,42,0.06)] relative flex flex-col items-center text-center"
+          >
+            <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center font-black text-amber-800 border border-amber-200 mb-3 shadow-xs">
+              3
             </div>
-
-            {/* QR Code and Verification footer */}
-            <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center border border-gray-200">
-                  <QrCode className="w-8 h-8 text-gray-700" />
-                </div>
-                <div>
-                  <span className="text-xs font-bold text-gray-900 block">Scan to Verify</span>
-                  <span className="text-[10px] text-gray-400 font-mono">olympido.com/v/{selectedScorecardUser.recentContest.verifyHash.slice(0, 8)}</span>
-                </div>
-              </div>
-
-              <button
-                onClick={() => {
-                  alert("Scorecard image downloaded! Ready to share on social channels.");
-                }}
-                className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <Share2 className="w-3.5 h-3.5" /> Share Card
-              </button>
+            <div className={`w-16 h-16 rounded-2xl bg-gradient-to-tr ${mockLeaders[2].avatarGradient} flex items-center justify-center text-white font-extrabold text-xl shadow-md mb-3`}>
+              KC
             </div>
+            <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 mb-2">
+              Bronze • {mockLeaders[2].ratingTier}
+            </span>
+            <h3 className="font-extrabold text-lg text-slate-900" style={{ fontFamily: "'Outfit', sans-serif" }}>
+              {mockLeaders[2].name}
+            </h3>
+            <p className="text-xs text-slate-500 mb-3">{mockLeaders[2].institution}</p>
+            <div className="w-full pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold">
+              <span className="text-slate-500">{mockLeaders[2].rating} Elo</span>
+              <span className="text-purple-700 font-extrabold">{mockLeaders[2].points.toLocaleString()} pts</span>
+            </div>
+            <button
+              onClick={() => setSelectedScorecardUser(mockLeaders[2])}
+              className="mt-3 w-full py-2 rounded-xl text-xs font-bold bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              <QrCode className="w-3.5 h-3.5" />
+              <span>Scorecard</span>
+            </button>
+          </motion.div>
+        </div>
+
+        {/* Full Table with High Contrast */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs sm:text-sm">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase text-[11px] tracking-wider">
+                <tr>
+                  <th className="py-3.5 px-4 sm:px-6">Rank</th>
+                  <th className="py-3.5 px-4">Student</th>
+                  <th className="py-3.5 px-4 hidden sm:table-cell">Institution</th>
+                  <th className="py-3.5 px-4">Tier & Rating</th>
+                  <th className="py-3.5 px-4">Points</th>
+                  <th className="py-3.5 px-4 text-center">Trend</th>
+                  <th className="py-3.5 px-4 sm:px-6 text-right">Certificate</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-medium">
+                {mockLeaders.map((leader) => (
+                  <tr key={leader.rank} className="hover:bg-purple-50/40 transition-colors">
+                    <td className="py-3.5 px-4 sm:px-6 font-extrabold text-slate-900">
+                      #{leader.rank}
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <div className="flex items-center gap-2.5">
+                        <div className={`w-8 h-8 rounded-lg bg-gradient-to-tr ${leader.avatarGradient} flex items-center justify-center text-white text-xs font-extrabold shrink-0`}>
+                          {leader.name.split(" ").map(n => n[0]).join("")}
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-900">{leader.name}</p>
+                          <p className="text-[11px] text-slate-400">@{leader.username}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-3.5 px-4 text-slate-600 hidden sm:table-cell">
+                      {leader.institution}
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <span className="font-bold text-slate-800">{leader.rating}</span>
+                      <span className="text-[11px] text-purple-700 font-semibold block sm:inline sm:ml-1.5">
+                        {leader.ratingTier}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4 font-extrabold text-purple-700">
+                      {leader.points.toLocaleString()}
+                    </td>
+                    <td className="py-3.5 px-4 text-center">
+                      <TrendIcon trend={leader.trend} />
+                    </td>
+                    <td className="py-3.5 px-4 sm:px-6 text-right">
+                      <button
+                        onClick={() => setSelectedScorecardUser(leader)}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 transition-colors cursor-pointer"
+                      >
+                        <QrCode className="w-3.5 h-3.5" />
+                        <span>View</span>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
-      )}
+      </div>
+
+      {/* Verified Scorecard Modal */}
+      <AnimatePresence>
+        {selectedScorecardUser && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+            onClick={() => setSelectedScorecardUser(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 16 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 16 }}
+              className="relative w-full max-w-lg bg-white rounded-3xl border border-slate-200 shadow-2xl p-6 sm:p-8 overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setSelectedScorecardUser(null)}
+                className="absolute top-4 right-4 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-purple-600 flex items-center justify-center text-amber-300">
+                  <Flame className="w-5 h-5 fill-amber-300" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-lg text-slate-900" style={{ fontFamily: "'Outfit', sans-serif" }}>
+                    Verified Digital Scorecard
+                  </h3>
+                  <span className="text-xs text-slate-500">Cryptographically Authenticated on Olympido</span>
+                </div>
+              </div>
+
+              {/* Student info box */}
+              <div className="p-4 rounded-2xl bg-purple-50/70 border border-purple-100 mb-5 flex items-center justify-between">
+                <div>
+                  <h4 className="font-extrabold text-base text-slate-900">{selectedScorecardUser.name}</h4>
+                  <p className="text-xs text-slate-600">{selectedScorecardUser.institution}</p>
+                </div>
+                <div className="text-right">
+                  <span className="text-xs font-bold text-purple-700 block">{selectedScorecardUser.ratingTier}</span>
+                  <span className="text-lg font-black text-slate-900">{selectedScorecardUser.rating} Elo</span>
+                </div>
+              </div>
+
+              {/* Recent Contest Result */}
+              <div className="space-y-3 mb-6">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Latest Contest</span>
+                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                  <p className="font-bold text-sm text-slate-900 mb-2">{selectedScorecardUser.recentContest.title}</p>
+                  <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                    <div className="p-2 rounded-lg bg-white border border-slate-100">
+                      <span className="text-slate-400 block text-[10px]">Score</span>
+                      <span className="font-black text-slate-900">{selectedScorecardUser.recentContest.score}</span>
+                    </div>
+                    <div className="p-2 rounded-lg bg-white border border-slate-100">
+                      <span className="text-slate-400 block text-[10px]">Percentile</span>
+                      <span className="font-black text-emerald-600">{selectedScorecardUser.recentContest.percentile}</span>
+                    </div>
+                    <div className="p-2 rounded-lg bg-white border border-slate-100">
+                      <span className="text-slate-400 block text-[10px]">Rating Δ</span>
+                      <span className="font-black text-purple-700">+{selectedScorecardUser.recentContest.ratingDelta}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Verification Stamp */}
+              <div className="p-3.5 rounded-xl border border-slate-200 flex items-center justify-between text-xs text-slate-500 mb-6 bg-white">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                  <span className="font-mono text-[11px] truncate max-w-[200px]">
+                    Hash: {selectedScorecardUser.recentContest.verifyHash}
+                  </span>
+                </div>
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                  VERIFIED
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setSelectedScorecardUser(null)}
+                  className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white shadow-md shadow-purple-600/25 transition-all cursor-pointer"
+                >
+                  Done
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 };

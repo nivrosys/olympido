@@ -1,17 +1,17 @@
 "use client";
 
 import React from "react";
+import { motion } from "framer-motion";
 import { Competition } from "../data/mockCompetitions";
-import { 
-  Trophy, 
-  Calendar, 
-  Clock, 
-  Users, 
-  CheckCircle2, 
-  ArrowRight, 
+import {
+  Trophy,
+  Calendar,
+  Clock,
+  Users,
+  CheckCircle2,
+  ArrowRight,
   Award,
   Sparkles,
-  ExternalLink
 } from "lucide-react";
 
 interface CompetitionCardProps {
@@ -19,6 +19,15 @@ interface CompetitionCardProps {
   onSelect?: (competition: Competition) => void;
   featured?: boolean;
 }
+
+const categoryStyles: Record<string, { bg: string; text: string; border: string }> = {
+  physics: { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200" },
+  mathematics: { bg: "bg-purple-50", text: "text-purple-700", border: "border-purple-200" },
+  coding: { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200" },
+  chemistry: { bg: "bg-rose-50", text: "text-rose-700", border: "border-rose-200" },
+  astronomy: { bg: "bg-amber-50", text: "text-amber-800", border: "border-amber-200" },
+  biology: { bg: "bg-cyan-50", text: "text-cyan-800", border: "border-cyan-200" },
+};
 
 export const CompetitionCard: React.FC<CompetitionCardProps> = ({
   competition,
@@ -29,157 +38,149 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
     switch (competition.status) {
       case "live":
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-500 text-white shadow-xs animate-pulse">
-            <span className="w-2 h-2 rounded-full bg-white" />
-            Live Arena Now
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-rose-600 text-white shadow-md shadow-rose-600/30">
+            <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+            Live Now
           </span>
         );
       case "registration_open":
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
             Registration Open
           </span>
         );
       case "upcoming":
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
             Starting Soon
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600">
             Completed
           </span>
         );
     }
   };
 
-  const getCategoryTheme = () => {
-    switch (competition.category) {
-      case "physics":
-        return { tagBg: "bg-blue-50 text-blue-700 border-blue-200", border: "hover:border-blue-300" };
-      case "mathematics":
-        return { tagBg: "bg-purple-50 text-purple-700 border-purple-200", border: "hover:border-purple-300" };
-      case "coding":
-        return { tagBg: "bg-emerald-50 text-emerald-700 border-emerald-200", border: "hover:border-emerald-300" };
-      case "chemistry":
-        return { tagBg: "bg-rose-50 text-rose-700 border-rose-200", border: "hover:border-rose-300" };
-      case "astronomy":
-        return { tagBg: "bg-amber-50 text-amber-700 border-amber-200", border: "hover:border-amber-300" };
-      default:
-        return { tagBg: "bg-indigo-50 text-indigo-700 border-indigo-200", border: "hover:border-indigo-300" };
-    }
-  };
-
-  const theme = getCategoryTheme();
+  const catStyle = categoryStyles[competition.category] || categoryStyles.physics;
 
   return (
-    <div
+    <motion.div
+      whileHover={{ y: -6 }}
+      whileTap={{ scale: 0.99 }}
+      transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
       onClick={() => onSelect?.(competition)}
-      className={`group relative bg-white rounded-2xl border border-gray-200/90 shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden cursor-pointer ${theme.border} ${
-        featured ? "ring-1 ring-purple-500/20" : ""
+      className={`group relative rounded-2xl flex flex-col overflow-hidden cursor-pointer bg-white border transition-all duration-300 ${
+        featured
+          ? "border-purple-200 shadow-[0_8px_24px_-4px_rgba(108,62,244,0.12)] hover:border-purple-400 hover:shadow-[0_20px_40px_-6px_rgba(108,62,244,0.2)]"
+          : "border-slate-200/90 shadow-[0_4px_16px_-2px_rgba(15,23,42,0.05)] hover:border-purple-300 hover:shadow-[0_20px_36px_-6px_rgba(108,62,244,0.15)]"
       }`}
     >
       {/* Card Header Gradient Banner */}
-      <div className={`h-28 sm:h-32 bg-gradient-to-r ${competition.bannerGradient} relative p-4 flex flex-col justify-between overflow-hidden`}>
-        {/* Decorative background glow */}
-        <div className="absolute inset-0 bg-black/15 pointer-events-none" />
-        <div className="absolute -right-6 -bottom-6 w-24 h-24 rounded-full bg-white/10 blur-xl pointer-events-none" />
+      <div className={`h-32 sm:h-36 bg-gradient-to-r ${competition.bannerGradient} relative p-4 flex flex-col justify-between overflow-hidden`}>
+        <div className="absolute inset-0 bg-black/20 pointer-events-none" />
+        <div
+          className="absolute -right-8 -bottom-8 w-28 h-28 rounded-full pointer-events-none bg-white/10 blur-xl"
+        />
 
         {/* Top Badges */}
         <div className="relative z-10 flex items-center justify-between">
-          <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-white/90 text-gray-900 shadow-xs backdrop-blur-xs flex items-center gap-1">
-            <Award className="w-3.5 h-3.5 text-purple-600" />
+          <span className="text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1 bg-black/45 backdrop-blur-md text-white border border-white/20">
+            <Award className="w-3.5 h-3.5 text-amber-300" />
             {competition.difficulty}
           </span>
           {getStatusBadge()}
         </div>
 
-        {/* Bottom Banner Info: Points Award */}
+        {/* Bottom Banner Info */}
         <div className="relative z-10 flex items-center justify-between text-white">
-          <div className="flex items-center gap-1.5 text-xs font-bold bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-lg">
+          <div className="flex items-center gap-1.5 text-xs font-extrabold px-2.5 py-1 rounded-lg bg-black/45 backdrop-blur-md border border-white/20">
             <Trophy className="w-3.5 h-3.5 text-amber-300" />
-            <span>+{competition.pointsAwarded.toLocaleString()} Olympiad Points</span>
+            <span>+{competition.pointsAwarded.toLocaleString()} Points</span>
           </div>
           {featured && (
-            <span className="text-[11px] font-bold text-amber-300 flex items-center gap-1 bg-amber-400/20 px-2 py-0.5 rounded-full border border-amber-300/30">
-              <Sparkles className="w-3 h-3" /> Featured
+            <span className="text-[11px] font-bold flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 shadow-sm shadow-amber-500/30">
+              <Sparkles className="w-3 h-3 fill-slate-950" /> Featured
             </span>
           )}
         </div>
       </div>
 
-      {/* Card Body */}
-      <div className="p-5 flex-1 flex flex-col justify-between">
+      {/* Card Body with High-Contrast Typography */}
+      <div className="p-5 flex-1 flex flex-col justify-between bg-white">
         <div>
-          {/* Category & Institutional Organizer */}
-          <div className="flex items-center justify-between gap-2 mb-2.5">
-            <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-md border ${theme.tagBg}`}>
+          {/* Category & Organizer */}
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <span className={`text-xs font-bold px-2.5 py-0.5 rounded-md border ${catStyle.bg} ${catStyle.text} ${catStyle.border}`}>
               {competition.categoryLabel}
             </span>
-            <div className="flex items-center gap-1 text-xs text-gray-500">
-              <span className="font-medium truncate max-w-[150px]">{competition.organizer.name}</span>
+            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+              <span className="truncate max-w-[140px]">{competition.organizer.name}</span>
               {competition.organizer.isVerified && (
-                <span title={`Verified institutional email: @${competition.organizer.domain}`}>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                </span>
+                <CheckCircle2 className="w-3.5 h-3.5 text-purple-600 shrink-0" />
               )}
             </div>
           </div>
 
           {/* Title */}
-          <h3 className="font-bold text-lg text-gray-900 group-hover:text-purple-600 transition-colors line-clamp-2 mb-2">
+          <h3
+            className="font-extrabold text-lg leading-snug line-clamp-2 mb-2 text-slate-900 group-hover:text-purple-700 transition-colors"
+            style={{ fontFamily: "'Outfit', sans-serif" }}
+          >
             {competition.title}
           </h3>
 
           {/* Description */}
-          <p className="text-xs sm:text-sm text-gray-600 line-clamp-2 mb-4 leading-relaxed">
+          <p className="text-xs sm:text-sm line-clamp-2 mb-4 leading-relaxed text-slate-600 font-normal">
             {competition.description}
           </p>
 
-          {/* Metadata Grid: Schedule & Duration */}
-          <div className="space-y-1.5 pt-3 border-t border-gray-100 text-xs text-gray-500">
-            <div className="flex items-center justify-between">
+          {/* Metadata */}
+          <div className="space-y-2 pt-3 border-t border-slate-100">
+            <div className="flex items-center justify-between text-xs text-slate-600">
               <span className="flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                <span>{competition.contestDate}</span>
+                <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                {competition.contestDate}
               </span>
-              <span className="flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5 text-gray-400" />
-                <span>{competition.durationMinutes} mins</span>
+              <span className="flex items-center gap-1 font-medium">
+                <Clock className="w-3.5 h-3.5 text-slate-400" />
+                {competition.durationMinutes} mins
               </span>
             </div>
-
-            <div className="flex items-center justify-between text-gray-500">
+            <div className="flex items-center justify-between text-xs text-slate-600">
               <span className="flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5 text-gray-400" />
-                <span>{competition.participantsCount.toLocaleString()} enrolled</span>
+                <Users className="w-3.5 h-3.5 text-slate-400" />
+                {competition.participantsCount.toLocaleString()} enrolled
               </span>
-              <span className="text-[11px] text-purple-700 font-medium">
+              <span className="text-[11px] font-bold text-purple-700">
                 Closes: {competition.registrationDeadline}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Card Footer Button */}
-        <div className="mt-5 pt-3 border-t border-gray-100 flex items-center justify-between">
-          <div className="text-xs font-medium text-gray-500 truncate mr-2">
-            <span className="text-gray-400">Award:</span> {competition.prizes}
+        {/* Footer Button with High Depth */}
+        <div className="mt-5 pt-3.5 border-t border-slate-100 flex items-center justify-between">
+          <div className="text-xs font-medium truncate mr-2">
+            <span className="text-slate-400">Award:</span>{" "}
+            <span className="text-slate-700 font-semibold">{competition.prizes}</span>
           </div>
-          <button
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer shadow-sm ${
               competition.status === "live"
-                ? "bg-rose-600 hover:bg-rose-700 text-white shadow-xs"
-                : "bg-purple-50 text-purple-700 hover:bg-purple-600 hover:text-white"
+                ? "bg-rose-600 hover:bg-rose-700 text-white shadow-rose-600/25"
+                : "bg-purple-600 hover:bg-purple-700 text-white shadow-purple-600/25"
             }`}
           >
             {competition.status === "live" ? "Enter Live" : "Register"}
             <ArrowRight className="w-3.5 h-3.5" />
-          </button>
+          </motion.button>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };

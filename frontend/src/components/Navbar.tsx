@@ -1,8 +1,24 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Flame, Compass, Trophy, BookOpen, Award, Menu, X, ShieldCheck, ChevronRight, User } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Flame,
+  Compass,
+  Trophy,
+  BookOpen,
+  Award,
+  Menu,
+  X,
+  ShieldCheck,
+  ChevronRight,
+  User,
+  Sparkles,
+  Building2,
+  GraduationCap,
+} from "lucide-react";
 
 interface NavbarProps {
   currentRole?: "student" | "organizer" | "admin";
@@ -16,171 +32,255 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenAuthModal,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [hoveredLink, setHoveredLink] = useState<string | null>(null);
+  const pathname = usePathname();
+  const router = useRouter();
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 8);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const navLinks = [
     { label: "Home", href: "/", icon: Flame },
-    { label: "Explore", href: "#explore-section", icon: Compass },
-    { label: "Leaderboard", href: "#leaderboard-preview", icon: Trophy, badge: "Live" },
-    { label: "How It Works", href: "#how-it-works", icon: BookOpen },
-    { label: "Scorecards", href: "#scorecards-preview", icon: Award },
+    { label: "Explore", href: "/#explore-section", icon: Compass },
+    { label: "Schools", href: "/institutions", icon: Building2 },
+    { label: "Leaderboard", href: "/#leaderboard-preview", icon: Trophy, badge: "Live" },
+    { label: "Scorecards", href: "/verify", icon: Award },
   ];
 
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-xs transition-all">
+    <header
+      className={`sticky top-0 z-50 transition-all duration-300 ${
+        scrolled ? "glass-nav-scrolled" : "glass-nav"
+      }`}
+    >
+      {/* Decorative top accent line with depth gradient */}
+      <div className="h-[2.5px] w-full bg-gradient-to-r from-purple-600 via-indigo-600 to-amber-400" />
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        
-        {/* Brand Logo */}
-        <Link href="/" className="flex items-center gap-3 group">
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center shadow-md shadow-purple-500/20 group-hover:scale-105 transition-transform"
-            style={{ background: "linear-gradient(135deg, #6C3EF4 0%, #4B21D4 100%)" }}
+        {/* Brand Logo with Depth & Glow */}
+        <Link href="/" className="flex items-center gap-3 group shrink-0">
+          <motion.div
+            whileHover={{ scale: 1.06, rotate: 3 }}
+            whileTap={{ scale: 0.96 }}
+            className="w-10 h-10 rounded-xl flex items-center justify-center relative overflow-hidden shadow-md shadow-purple-600/30 group-hover:shadow-lg group-hover:shadow-purple-600/40 transition-all"
+            style={{
+              background: "linear-gradient(135deg, #6C3EF4 0%, #5227DC 50%, #3B15A3 100%)",
+            }}
           >
-            <Flame className="w-5 h-5 text-amber-300 fill-amber-300" />
-          </div>
+            <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <Flame className="w-5 h-5 text-amber-300 fill-amber-300 drop-shadow-sm" />
+          </motion.div>
           <div className="flex flex-col">
             <div className="flex items-center gap-1.5">
-              <span className="font-extrabold text-xl tracking-tight text-gray-900">Olympido</span>
               <span
-                className="text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider"
-                style={{ background: "#EDE9FF", color: "#6C3EF4" }}
+                className="font-extrabold text-xl tracking-tight text-slate-900 group-hover:text-purple-700 transition-colors"
+                style={{ fontFamily: "'Outfit', sans-serif" }}
               >
-                Olympiad Arena
+                Olympido
+              </span>
+              <span
+                className="text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider bg-purple-100 text-purple-700 border border-purple-200/80 shadow-2xs"
+              >
+                Arena
               </span>
             </div>
-            <span className="text-[10px] text-gray-500 font-medium hidden sm:inline">
+            <span className="text-[10.5px] text-slate-500 font-medium hidden xl:inline -mt-0.5">
               Verified Academic Competitions
             </span>
           </div>
         </Link>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-1">
+        {/* Desktop Navigation with Modern Pill Hover */}
+        <nav className="hidden md:flex items-center gap-0.5 lg:gap-1">
           {navLinks.map((link) => {
             const Icon = link.icon;
+            const isHovered = hoveredLink === link.label;
+
             return (
-              <a
+              <Link
                 key={link.label}
                 href={link.href}
-                className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+                onMouseEnter={() => setHoveredLink(link.label)}
+                onMouseLeave={() => setHoveredLink(null)}
+                className="relative flex items-center gap-1.5 px-2 xl:px-3 py-1.5 rounded-xl text-xs xl:text-sm font-semibold transition-all duration-200 text-slate-700 hover:text-purple-700 whitespace-nowrap shrink-0"
               >
-                <Icon className="w-4 h-4 text-gray-400" />
-                <span>{link.label}</span>
-                {link.badge && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-800">
-                    {link.badge}
-                  </span>
+                {/* Background hover pill with spring animation */}
+                {isHovered && (
+                  <motion.div
+                    layoutId="navbar-hover-pill"
+                    className="absolute inset-0 bg-purple-50/90 rounded-xl border border-purple-100 shadow-2xs"
+                    transition={{ type: "spring", stiffness: 450, damping: 30 }}
+                  />
                 )}
-              </a>
+
+                <span className="relative z-10 flex items-center gap-1 xl:gap-2">
+                  <Icon className={`w-3.5 h-3.5 xl:w-4 xl:h-4 transition-colors shrink-0 hidden lg:inline ${isHovered ? "text-purple-600" : "text-slate-400"}`} />
+                  <span className="whitespace-nowrap">{link.label}</span>
+                  {link.badge && (
+                    <span className="hidden xl:inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-50 text-rose-600 border border-rose-200/80 ring-2 ring-rose-500/15 shrink-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
+                      {link.badge}
+                    </span>
+                  )}
+                </span>
+              </Link>
             );
           })}
         </nav>
 
-        {/* Right Actions: Role Switcher & Sign In */}
-        <div className="flex items-center gap-3">
-          
-          {/* Quick Role Switcher (Simulates the multi-role ecosystem) */}
-          <div className="hidden lg:flex items-center bg-gray-100 p-1 rounded-xl text-xs font-semibold">
+        {/* Right Actions: Role Selector + Sign In */}
+        <div className="flex items-center gap-2.5 shrink-0">
+          {/* Segmented Multi-Role Switcher with Depth */}
+          <div className="hidden lg:flex items-center p-1 rounded-xl bg-slate-100 border border-slate-200/80 shadow-inner">
             <button
-              onClick={() => onRoleChange?.("student")}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                currentRole === "student"
-                  ? "bg-white text-gray-900 shadow-xs"
-                  : "text-gray-500 hover:text-gray-800"
+              onClick={() => {
+                onRoleChange?.("student");
+                if (pathname !== "/") router.push("/");
+              }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                currentRole === "student" && !pathname.includes("/organizer") && !pathname.includes("/admin")
+                  ? "bg-white text-purple-700 shadow-sm border border-slate-200/60"
+                  : "text-slate-600 hover:text-slate-900"
               }`}
             >
-              Student View
+              Student
             </button>
-            <button
+            <Link
+              href="/organizer"
               onClick={() => onRoleChange?.("organizer")}
-              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 ${
-                currentRole === "organizer"
-                  ? "bg-purple-600 text-white shadow-xs"
-                  : "text-gray-500 hover:text-gray-800"
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                pathname.includes("/organizer") || currentRole === "organizer"
+                  ? "bg-purple-600 text-white shadow-sm shadow-purple-500/30"
+                  : "text-slate-600 hover:text-slate-900"
               }`}
             >
               <ShieldCheck className="w-3.5 h-3.5" />
-              Organizer (.edu)
-            </button>
+              <span>Organizer</span>
+            </Link>
+            <Link
+              href="/admin"
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap ${
+                pathname.includes("/admin")
+                  ? "bg-slate-900 text-white shadow-sm"
+                  : "text-slate-500 hover:text-slate-900"
+              }`}
+            >
+              <span>Admin</span>
+            </Link>
           </div>
 
-          {/* Sign In / Profile Button */}
-          <button
+          {/* Sleek, Modern Sign In Button with Perfect Alignment */}
+          <motion.button
+            whileHover={{ scale: 1.02, y: -1 }}
+            whileTap={{ scale: 0.98 }}
             onClick={onOpenAuthModal}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white shadow-sm hover:shadow-md transition-all active:scale-98"
-            style={{ background: "#6C3EF4" }}
+            className="h-9 px-4 rounded-xl text-xs sm:text-sm font-bold text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 shadow-xs hover:shadow-md transition-all flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer group"
           >
-            <User className="w-4 h-4" />
-            <span className="hidden sm:inline">Sign In / Register</span>
-            <span className="sm:hidden">Sign In</span>
-          </button>
+            <span className="w-5 h-5 rounded-lg bg-white/10 flex items-center justify-center shrink-0 group-hover:bg-purple-600/30 transition-colors">
+              <User className="w-3 h-3 text-slate-200 group-hover:text-purple-300 transition-colors" />
+            </span>
+            <span className="whitespace-nowrap font-bold tracking-tight">Sign In</span>
+          </motion.button>
 
           {/* Mobile menu toggle */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+            className="md:hidden p-2 rounded-xl text-slate-700 hover:bg-slate-100 border border-slate-200 transition-colors"
             aria-label="Toggle navigation menu"
           >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Drawer */}
-      {mobileMenuOpen && (
-        <div className="md:hidden border-t border-gray-100 bg-white px-4 pt-3 pb-5 space-y-2 shadow-lg animate-in slide-in-from-top duration-200">
-          {navLinks.map((link) => {
-            const Icon = link.icon;
-            return (
-              <a
-                key={link.label}
-                href={link.href}
+      {/* Mobile Drawer with Smooth Animation */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+            className="md:hidden overflow-hidden bg-white/98 backdrop-blur-2xl border-t border-slate-200 shadow-xl"
+          >
+            <div className="px-4 pt-3 pb-6 space-y-1.5">
+              {navLinks.map((link) => {
+                const Icon = link.icon;
+                return (
+                  <Link
+                    key={link.label}
+                    href={link.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-semibold text-slate-800 hover:text-purple-700 hover:bg-purple-50 transition-all"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Icon className="w-4 h-4 text-purple-600" />
+                      <span>{link.label}</span>
+                      {link.badge && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200">
+                          {link.badge}
+                        </span>
+                      )}
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-400" />
+                  </Link>
+                );
+              })}
+
+              <Link
+                href="/profile"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-purple-50 hover:text-purple-700"
+                className="flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-semibold text-slate-800 hover:text-purple-700 hover:bg-purple-50 transition-all"
               >
                 <div className="flex items-center gap-3">
-                  <Icon className="w-4 h-4 text-gray-400" />
-                  <span>{link.label}</span>
+                  <User className="w-4 h-4 text-purple-600" />
+                  <span>Student Profile</span>
                 </div>
-                <ChevronRight className="w-4 h-4 text-gray-300" />
-              </a>
-            );
-          })}
+                <ChevronRight className="w-4 h-4 text-slate-400" />
+              </Link>
 
-          <div className="border-t border-gray-100 pt-3 mt-2">
-            <span className="text-xs text-gray-400 uppercase font-bold tracking-wider px-3 block mb-2">
-              Preview Role View
-            </span>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => {
-                  onRoleChange?.("student");
-                  setMobileMenuOpen(false);
-                }}
-                className={`py-2 text-xs font-semibold rounded-lg text-center ${
-                  currentRole === "student"
-                    ? "bg-purple-100 text-purple-700 font-bold"
-                    : "bg-gray-100 text-gray-600"
-                }`}
-              >
-                Student View
-              </button>
-              <button
-                onClick={() => {
-                  onRoleChange?.("organizer");
-                  setMobileMenuOpen(false);
-                }}
-                className={`py-2 text-xs font-semibold rounded-lg text-center ${
-                  currentRole === "organizer"
-                    ? "bg-purple-600 text-white"
-                    : "bg-gray-100 text-gray-600"
-                }`}
-              >
-                Organizer View
-              </button>
+              <div className="pt-3 mt-3 border-t border-slate-200">
+                <span className="text-xs uppercase font-extrabold tracking-wider text-slate-400 px-3 block mb-2">
+                  Portal Switcher
+                </span>
+                <div className="grid grid-cols-3 gap-2">
+                  <Link
+                    href="/"
+                    onClick={() => {
+                      onRoleChange?.("student");
+                      setMobileMenuOpen(false);
+                    }}
+                    className="py-2.5 text-xs font-bold rounded-xl text-center transition-all bg-slate-100 text-slate-700 border border-slate-200"
+                  >
+                    Student
+                  </Link>
+                  <Link
+                    href="/organizer"
+                    onClick={() => {
+                      onRoleChange?.("organizer");
+                      setMobileMenuOpen(false);
+                    }}
+                    className="py-2.5 text-xs font-bold rounded-xl text-center transition-all bg-purple-600 text-white shadow-sm"
+                  >
+                    Organizer
+                  </Link>
+                  <Link
+                    href="/admin"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="py-2.5 text-xs font-bold rounded-xl text-center transition-all bg-slate-900 text-white"
+                  >
+                    Admin
+                  </Link>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   );
 };
