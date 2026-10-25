@@ -1,0 +1,498 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// Enums
+// ============================================================
+
+enum UserRole {
+  STUDENT
+  TEACHER
+  ORGANIZER
+  ADMIN
+}
+
+enum OrgStatus {
+  PENDING_VERIFICATION
+  VERIFIED
+  REJECTED
+  SUSPENDED
+}
+
+enum ContestStatus {
+  DRAFT
+  IN_REVIEW
+  CHANGES_REQUESTED
+  APPROVED
+  SCHEDULED
+  LIVE
+  EVALUATION
+  COMPLETED
+  REJECTED
+  CANCELLED
+}
+
+enum ContestCategory {
+  PHYSICS
+  MATHEMATICS
+  CHEMISTRY
+  INFORMATICS
+  BIOLOGY
+  ASTRONOMY
+}
+
+enum DifficultyLevel {
+  SCHOOL
+  REGIONAL
+  NATIONAL
+  INTERNATIONAL
+}
+
+enum QuestionType {
+  MCQ
+  SHORT_ANSWER
+  THEORETICAL
+  CODE
+}
+
+enum EvaluationStatus {
+  PENDING
+  AUTO_GRADED
+  MANUAL_REVIEW
+  GRADED
+}
+
+enum TokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
+// ============================================================
+// 1. Users & Authentication
+// ============================================================
+
+model User {
+  id              String   @id @default(uuid()) @db.Uuid
+  email           String   @unique @db.VarChar(255)
+  passwordHash    String?  @map("password_hash") @db.VarChar(255)
+  role            UserRole @default(STUDENT)
+  fullName        String   @map("full_name") @db.VarChar(150)
+  username        String   @unique @db.VarChar(50)
+  avatarUrl       String?  @map("avatar_url")
+  bio             String?
+  institutionName String?  @map("institution_name") @db.VarChar(255)
+  isEmailVerified Boolean  @default(false) @map("is_email_verified")
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  authProviders         UserAuthProvider[]
+  authTokens            AuthToken[]
+  teacherOrganizations  TeacherOrganization[]
+  verifiedOrganizations Organization[]        @relation("VerifiedBy")
+  createdContests       Contest[]             @relation("Creator")
+  reviewedContests      Contest[]             @relation("Reviewer")
+  contestRegistrations  ContestRegistration[]
+  submissions           Submission[]
+  gradedAnswers         SubmissionAnswer[]    @relation("GradedBy")
+  contestResults        ContestResult[]
+  studentStats          StudentStats?
+  posts                 Post[]
+  postLikes             PostLike[]
+  postComments          PostComment[]
+  following             UserFollow[]          @relation("Follower")
+  followers             UserFollow[]          @relation("Following")
+  notifications         Notification[]
+  auditLogs             AuditLog[]
+  approvedTeachers      TeacherOrganization[] @relation("ApprovedBy")
+
+  @@map("users")
+}
+
+model UserAuthProvider {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  provider       String   @db.VarChar(30)
+  providerUserId String   @map("provider_user_id") @db.VarChar(255)
+  accessToken    String?  @map("access_token")
+  refreshToken   String?  @map("refresh_token")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId])
+  @@index([userId])
+  @@map("user_auth_providers")
+}
+
+model AuthToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenType TokenType @map("token_type")
+  tokenHash String    @map("token_hash") @db.VarChar(255)
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz
+  usedAt    DateTime? @map("used_at") @db.Timestamptz
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@map("auth_tokens")
+}
+
+// ============================================================
+// 2. Organizations & Institutional Verification
+// ============================================================
+
+model Organization {
+  id                       String    @id @default(uuid()) @db.Uuid
+  name                     String    @db.VarChar(255)
+  officialDomain           String    @unique @map("official_domain") @db.VarChar(255)
+  contactEmail             String    @map("contact_email") @db.VarChar(255)
+  websiteUrl               String?   @map("website_url")
+  accreditationDocumentUrl String?   @map("accreditation_document_url")
+  status                   OrgStatus @default(PENDING_VERIFICATION)
+  verifiedById             String?   @map("verified_by") @db.Uuid
+  verifiedAt               DateTime? @map("verified_at") @db.Timestamptz
+  rejectionReason          String?   @map("rejection_reason")
+  createdAt                DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt                DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  verifiedBy           User?                 @relation("VerifiedBy", fields: [verifiedById], references: [id])
+  teacherOrganizations TeacherOrganization[]
+  contests             Contest[]
+
+  @@index([status])
+  @@map("organizations")
+}
+
+model TeacherOrganization {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  isApproved     Boolean  @default(false) @map("is_approved")
+  approvedById   String?  @map("approved_by") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  approvedBy   User?        @relation("ApprovedBy", fields: [approvedById], references: [id])
+
+  @@unique([userId, organizationId])
+  @@map("teacher_organizations")
+}
+
+// ============================================================
+// 3. Contests & Admin Approval Workflow
+// ============================================================
+
+model Contest {
+  id             String          @id @default(uuid()) @db.Uuid
+  creatorId      String          @map("creator_id") @db.Uuid
+  organizationId String?         @map("organization_id") @db.Uuid
+  title          String          @db.VarChar(255)
+  slug           String          @unique @db.VarChar(255)
+  category       ContestCategory
+  description    String
+  rules          String
+  difficulty     DifficultyLevel @default(REGIONAL)
+  bannerUrl      String?         @map("banner_url")
+  status         ContestStatus   @default(DRAFT)
+
+  // Schedule
+  registrationStartAt DateTime @map("registration_start_at") @db.Timestamptz
+  registrationEndAt   DateTime @map("registration_end_at") @db.Timestamptz
+  contestStartAt      DateTime @map("contest_start_at") @db.Timestamptz
+  durationMinutes     Int      @map("duration_minutes")
+
+  // Scoring
+  maxScore   Int @default(100) @map("max_score")
+  basePoints Int @default(500) @map("base_points")
+
+  // Admin review
+  reviewedById     String?   @map("reviewed_by") @db.Uuid
+  adminReviewNotes String?   @map("admin_review_notes")
+  reviewedAt       DateTime? @map("reviewed_at") @db.Timestamptz
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  creator       User                  @relation("Creator", fields: [creatorId], references: [id], onDelete: Restrict)
+  reviewer      User?                 @relation("Reviewer", fields: [reviewedById], references: [id])
+  organization  Organization?         @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  questions     ContestQuestion[]
+  registrations ContestRegistration[]
+  submissions   Submission[]
+  results       ContestResult[]
+
+  @@index([status])
+  @@index([category])
+  @@index([creatorId])
+  @@index([contestStartAt])
+  @@map("contests")
+}
+
+// ============================================================
+// 4. Contest Questions / Problem Sets
+// ============================================================
+
+model ContestQuestion {
+  id               String       @id @default(uuid()) @db.Uuid
+  contestId        String       @map("contest_id") @db.Uuid
+  questionOrder    Int          @map("question_order")
+  type             QuestionType @default(MCQ)
+  questionText     String       @map("question_text")
+  options          Json? // MCQ: [{"label":"A","text":"...","is_correct":true}]
+  correctAnswer    String?      @map("correct_answer")
+  explanation      String?
+  maxPoints        Decimal      @default(10.00) @map("max_points") @db.Decimal(6, 2)
+  timeLimitSeconds Int?         @map("time_limit_seconds")
+  attachments      Json? // [{"url":"...","type":"image"}]
+  createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime     @updatedAt @map("updated_at") @db.Timestamptz
+
+  contest Contest            @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  answers SubmissionAnswer[]
+
+  @@index([contestId])
+  @@map("contest_questions")
+}
+
+// ============================================================
+// 5. Contest Registrations
+// ============================================================
+
+model ContestRegistration {
+  id           String   @id @default(uuid()) @db.Uuid
+  contestId    String   @map("contest_id") @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  registeredAt DateTime @default(now()) @map("registered_at") @db.Timestamptz
+
+  contest Contest @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([contestId, userId])
+  @@index([contestId])
+  @@index([userId])
+  @@map("contest_registrations")
+}
+
+// ============================================================
+// 6. Submissions & Per-Question Answers
+// ============================================================
+
+model Submission {
+  id               String           @id @default(uuid()) @db.Uuid
+  contestId        String           @map("contest_id") @db.Uuid
+  userId           String           @map("user_id") @db.Uuid
+  rawScore         Decimal          @default(0.00) @map("raw_score") @db.Decimal(6, 2)
+  timeTakenSeconds Int              @map("time_taken_seconds")
+  status           EvaluationStatus @default(PENDING)
+  submittedAt      DateTime         @default(now()) @map("submitted_at") @db.Timestamptz
+  gradedAt         DateTime?        @map("graded_at") @db.Timestamptz
+
+  contest Contest            @relation(fields: [contestId], references: [id], onDelete: Restrict)
+  user    User               @relation(fields: [userId], references: [id], onDelete: Restrict)
+  answers SubmissionAnswer[]
+
+  @@unique([contestId, userId])
+  @@index([contestId])
+  @@index([userId])
+  @@map("submissions")
+}
+
+model SubmissionAnswer {
+  id             String    @id @default(uuid()) @db.Uuid
+  submissionId   String    @map("submission_id") @db.Uuid
+  questionId     String    @map("question_id") @db.Uuid
+  answerContent  String?   @map("answer_content")
+  answerFileUrl  String?   @map("answer_file_url")
+  selectedOption String?   @map("selected_option") @db.VarChar(10)
+  score          Decimal   @default(0.00) @db.Decimal(6, 2)
+  isCorrect      Boolean?  @map("is_correct")
+  gradedById     String?   @map("graded_by") @db.Uuid
+  gradedAt       DateTime? @map("graded_at") @db.Timestamptz
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  submission Submission      @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  question   ContestQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  gradedBy   User?           @relation("GradedBy", fields: [gradedById], references: [id])
+
+  @@unique([submissionId, questionId])
+  @@index([submissionId])
+  @@map("submission_answers")
+}
+
+// ============================================================
+// 7. Contest Results & Points
+// ============================================================
+
+model ContestResult {
+  id              String   @id @default(uuid()) @db.Uuid
+  contestId       String   @map("contest_id") @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  finalRank       Int      @map("final_rank")
+  percentile      Decimal  @map("percentile") @db.Decimal(5, 2)
+  pointsAwarded   Int      @map("points_awarded")
+  preRating       Int      @map("pre_rating")
+  postRating      Int      @map("post_rating")
+  ratingDelta     Int      @map("rating_delta")
+  isDisqualified  Boolean  @default(false) @map("is_disqualified")
+  scorecardQrHash String   @unique @map("scorecard_qr_hash") @db.VarChar(64)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  contest Contest @relation(fields: [contestId], references: [id], onDelete: Restrict)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Restrict)
+  posts   Post[]
+
+  @@unique([contestId, userId])
+  @@index([userId])
+  @@index([contestId])
+  @@index([createdAt])
+  @@map("contest_results")
+}
+
+// ============================================================
+// 8. Student Stats (Aggregate Cache)
+// ============================================================
+
+model StudentStats {
+  userId               String   @id @map("user_id") @db.Uuid
+  currentRating        Int      @default(1200) @map("current_rating")
+  peakRating           Int      @default(1200) @map("peak_rating")
+  totalPoints          BigInt   @default(0) @map("total_points")
+  contestsParticipated Int      @default(0) @map("contests_participated")
+  podiumFinishes       Int      @default(0) @map("podium_finishes")
+  currentStreak        Int      @default(0) @map("current_streak")
+  longestStreak        Int      @default(0) @map("longest_streak")
+  updatedAt            DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("student_stats")
+}
+
+// ============================================================
+// 9. Social: Posts, Comments, Likes, Follows
+// ============================================================
+
+model Post {
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @map("user_id") @db.Uuid
+  contestResultId   String?  @map("contest_result_id") @db.Uuid
+  postType          String   @default("SCORECARD") @map("post_type") @db.VarChar(30)
+  caption           String?
+  scorecardImageUrl String?  @map("scorecard_image_url")
+  likesCount        Int      @default(0) @map("likes_count")
+  commentsCount     Int      @default(0) @map("comments_count")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contestResult ContestResult? @relation(fields: [contestResultId], references: [id], onDelete: SetNull)
+  likes         PostLike[]
+  comments      PostComment[]
+
+  @@index([userId])
+  @@index([createdAt(sort: Desc)])
+  @@map("posts")
+}
+
+model PostLike {
+  id        String   @id @default(uuid()) @db.Uuid
+  postId    String   @map("post_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@map("post_likes")
+}
+
+model PostComment {
+  id              String   @id @default(uuid()) @db.Uuid
+  postId          String   @map("post_id") @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  content         String
+  parentCommentId String?  @map("parent_comment_id") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  post          Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentComment PostComment?  @relation("CommentThread", fields: [parentCommentId], references: [id], onDelete: Cascade)
+  replies       PostComment[] @relation("CommentThread")
+
+  @@index([postId])
+  @@map("post_comments")
+}
+
+model UserFollow {
+  id          String   @id @default(uuid()) @db.Uuid
+  followerId  String   @map("follower_id") @db.Uuid
+  followingId String   @map("following_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  follower  User @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+  @@map("user_follows")
+}
+
+// ============================================================
+// 10. Notifications
+// ============================================================
+
+model Notification {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  type          String   @db.VarChar(50)
+  title         String   @db.VarChar(255)
+  message       String?
+  referenceType String?  @map("reference_type") @db.VarChar(50)
+  referenceId   String?  @map("reference_id") @db.Uuid
+  isRead        Boolean  @default(false) @map("is_read")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+// ============================================================
+// 11. Audit Logs (Immutable)
+// ============================================================
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  actorId    String   @map("actor_id") @db.Uuid
+  action     String   @db.VarChar(100)
+  targetType String   @map("target_type") @db.VarChar(50)
+  targetId   String   @map("target_id") @db.Uuid
+  oldValue   Json?    @map("old_value")
+  newValue   Json?    @map("new_value")
+  ipAddress  String?  @map("ip_address") @db.VarChar(45)
+  userAgent  String?  @map("user_agent")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  actor User @relation(fields: [actorId], references: [id])
+
+  @@index([actorId])
+  @@index([targetType, targetId])
+  @@index([createdAt(sort: Desc)])
+  @@map("audit_logs")
+}
