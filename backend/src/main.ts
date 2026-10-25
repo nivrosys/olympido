@@ -38,6 +38,11 @@ async function bootstrap() {
     }),
   );
 
+  // Serialize BigInt safely across all JSON responses
+  (BigInt.prototype as any).toJSON = function () {
+    return Number(this);
+  };
+
   // Swagger OpenAPI documentation
   const config = new DocumentBuilder()
     .setTitle('Olympido API')
@@ -59,6 +64,10 @@ async function bootstrap() {
     .addTag('Organizations', 'Institutional onboarding and teacher affiliations')
     .addTag('Contests', 'Contest creation, lifecycle, and student registration')
     .addTag('Questions', 'Problem set creation, reordering, and inspection')
+    .addTag('Submissions', 'Live contest answer auto-save, bulk submission, and grading')
+    .addTag('Results', 'Contest finalization, scorecards, and public credential verification')
+    .addTag('Leaderboards', 'Weekly, monthly, and all-time global and categorical leaderboards')
+    .addTag('Upload', 'Direct file upload and presigned URL generation')
     .addTag('Admin', 'Moderation queues for contests, organizations, and audit logs')
     .build();
 

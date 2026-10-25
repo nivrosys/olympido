@@ -14,10 +14,12 @@ import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { ContestsModule } from './contests/contests.module';
 import { GatewayModule } from './gateway/gateway.module';
+import { LeaderboardsModule } from './leaderboards/leaderboards.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { QuestionsModule } from './questions/questions.module';
 import { RedisModule } from './redis/redis.module';
+import { ResultsModule } from './results/results.module';
 import { SubmissionsModule } from './submissions/submissions.module';
 import { UploadModule } from './upload/upload.module';
 import { UsersModule } from './users/users.module';
@@ -50,6 +52,8 @@ import { UsersModule } from './users/users.module';
     ContestsModule,
     QuestionsModule,
     SubmissionsModule,
+    ResultsModule,
+    LeaderboardsModule,
     AdminModule,
     UploadModule,
   ],

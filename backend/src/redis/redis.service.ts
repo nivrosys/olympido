@@ -133,6 +133,38 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  async zincrby(key: string, increment: number, member: string): Promise<number | null> {
+    if (!this.client) return null;
+    try {
+      const res = await this.client.zincrby(key, increment, member);
+      return parseFloat(res);
+    } catch (err: any) {
+      this.logger.error(`Error in zincrby for key ${key}: ${err.message}`);
+      return null;
+    }
+  }
+
+  async zscore(key: string, member: string): Promise<number | null> {
+    if (!this.client) return null;
+    try {
+      const res = await this.client.zscore(key, member);
+      return res !== null ? parseFloat(res) : null;
+    } catch (err: any) {
+      this.logger.error(`Error in zscore for key ${key}: ${err.message}`);
+      return null;
+    }
+  }
+
+  async zcard(key: string): Promise<number> {
+    if (!this.client) return 0;
+    try {
+      return await this.client.zcard(key);
+    } catch (err: any) {
+      this.logger.error(`Error in zcard for key ${key}: ${err.message}`);
+      return 0;
+    }
+  }
+
   async expire(key: string, seconds: number): Promise<void> {
     if (!this.client) return;
     try {
