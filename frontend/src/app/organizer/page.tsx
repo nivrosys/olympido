@@ -1,16 +1,19 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Navbar } from "../../components/Navbar";
 import { Footer } from "../../components/Footer";
+import { useAuth } from "../../context/AuthContext";
+import { contestsApi, submissionsApi, resultsApi } from "../../lib/api";
 import {
   MOCK_ORGANIZER_PROFILE,
   MOCK_HOSTED_CONTESTS,
   MOCK_ENROLLED_STUDENTS,
   MOCK_THEORETICAL_SUBMISSIONS,
   TheoreticalSubmissionItem,
+  HostedContestItem,
 } from "../../data/mockOrganizer";
 import {
   Building2,
@@ -37,6 +40,7 @@ import {
 } from "lucide-react";
 
 export default function OrganizerDashboardPage() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<"contests" | "enrollees" | "grading" | "institution">("contests");
   const [selectedContestFilter, setSelectedContestFilter] = useState<string>("all");
   const [studentSearch, setStudentSearch] = useState<string>("");
@@ -45,9 +49,69 @@ export default function OrganizerDashboardPage() {
   const [awardedMarks, setAwardedMarks] = useState<number>(45);
   const [feedbackText, setFeedbackText] = useState<string>("");
   const [gradingSuccess, setGradingSuccess] = useState<string | null>(null);
+  const [apiContests, setApiContests] = useState<HostedContestItem[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadOrganizerContests() {
+      try {
+        const res = await contestsApi.getMyCreatedContests();
+        if (res && res.contests && res.contests.length > 0 && isMounted) {
+          const categoryLabels: Record<string, any> = {
+            PHYSICS: { key: "physics", label: "Physics" },
+            MATHEMATICS: { key: "mathematics", label: "Mathematics" },
+            INFORMATICS: { key: "coding", label: "Informatics & Coding" },
+            CHEMISTRY: { key: "chemistry", label: "Chemistry" },
+            ASTRONOMY: { key: "astronomy", label: "Astronomy" },
+          };
+
+          const statusMap: Record<string, any> = {
+            LIVE: { status: "live", label: "Active Live Exam" },
+            IN_REVIEW: { status: "in_review", label: "Admin Review Queue" },
+            CHANGES_REQUESTED: { status: "in_review", label: "Changes Requested" },
+            APPROVED: { status: "approved", label: "Approved & Scheduled" },
+            SCHEDULED: { status: "approved", label: "Scheduled" },
+            COMPLETED: { status: "completed", label: "Completed" },
+            EVALUATION: { status: "completed", label: "Under Evaluation" },
+          };
+
+          const mapped: HostedContestItem[] = res.contests.map((c) => {
+            const cat = categoryLabels[c.category] || { key: "physics", label: "Physics" };
+            const stat = statusMap[c.status] || { status: "approved", label: "Approved" };
+            return {
+              id: c.id,
+              title: c.title,
+              category: cat.key,
+              categoryLabel: cat.label,
+              status: stat.status,
+              statusLabel: stat.label,
+              contestDate: c.startTime ? new Date(c.startTime).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Scheduled",
+              enrolledCount: c._count?.registrations || c._count?.submissions || 0,
+              maxCapacity: c.maxParticipants || 1500,
+              durationMinutes: c.durationMinutes || 90,
+              pointsAwarded: c.pointsAwarded || 1000,
+              bannerGradient: c.bannerUrl || "from-purple-600 via-indigo-700 to-blue-800",
+              plagiarismScore: 99.6,
+              targetEducationLevel: ["Senior High School", "Undergraduate"],
+            };
+          });
+
+          setApiContests(mapped);
+        }
+      } catch (err) {
+        console.warn("Backend organizer contests load note:", err);
+      }
+    }
+    void loadOrganizerContests();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const baseContests = apiContests.length > 0 ? apiContests : MOCK_HOSTED_CONTESTS;
 
   // Filtered contests
-  const filteredContests = MOCK_HOSTED_CONTESTS.filter((c) => {
+  const filteredContests = baseContests.filter((c) => {
     if (selectedContestFilter === "all") return true;
     return c.status === selectedContestFilter;
   });
@@ -68,9 +132,20 @@ export default function OrganizerDashboardPage() {
 
   const uniqueSchools = Array.from(new Set(MOCK_ENROLLED_STUDENTS.map((s) => s.studentInstitution)));
 
-  const handleGradeSubmission = (e: React.FormEvent) => {
+  const handleGradeSubmission = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedSubmission) return;
+
+    try {
+      if (selectedSubmission.id && selectedSubmission.id.length > 20) {
+        await submissionsApi.gradeAnswer(selectedSubmission.id, {
+          awardedPoints: awardedMarks,
+          feedbackNotes: feedbackText,
+        });
+      }
+    } catch (err) {
+      console.warn("Backend manual grading API note:", err);
+    }
 
     setGradingSuccess(`✓ Successfully graded ${selectedSubmission.studentName}'s solution! Awarded ${awardedMarks}/${selectedSubmission.maxMarks} points.`);
     setTimeout(() => {

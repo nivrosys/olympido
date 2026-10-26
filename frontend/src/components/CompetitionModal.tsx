@@ -18,29 +18,61 @@ import {
   ExternalLink,
   GraduationCap,
   Building2,
-  UserCheck,
+  AlertCircle,
 } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
+import { contestsApi } from "../lib/api";
 
 interface CompetitionModalProps {
   competition: Competition | null;
   onClose: () => void;
   onRegisterSuccess?: (compTitle: string) => void;
+  onRequireAuth?: () => void;
 }
 
 export const CompetitionModal: React.FC<CompetitionModalProps> = ({
   competition,
   onClose,
   onRegisterSuccess,
+  onRequireAuth,
 }) => {
+  const { user, isAuthenticated } = useAuth();
   const [isRegistered, setIsRegistered] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
-  const [selectedStudentSchool, setSelectedStudentSchool] = useState("Stanford University");
+  const [selectedStudentSchool, setSelectedStudentSchool] = useState(
+    user?.institutionName || "Stanford University"
+  );
 
   if (!competition) return null;
 
-  const handleRegister = () => {
-    setIsRegistered(true);
-    onRegisterSuccess?.(competition.title);
+  const handleRegister = async () => {
+    if (!isAuthenticated) {
+      onRequireAuth?.();
+      return;
+    }
+
+    setIsRegistering(true);
+    setErrorMsg(null);
+
+    try {
+      // If competition has a UUID from the backend, invoke API registration
+      if (competition.id && competition.id.length > 20) {
+        await contestsApi.register(competition.id);
+      }
+      setIsRegistered(true);
+      onRegisterSuccess?.(competition.title);
+    } catch (err: any) {
+      if (err.statusCode === 409) {
+        setIsRegistered(true);
+        setErrorMsg("You are already registered for this competition.");
+      } else {
+        setErrorMsg(err.message || "Registration failed. Please try again.");
+      }
+    } finally {
+      setIsRegistering(false);
+    }
   };
 
   const handleShare = () => {
@@ -67,7 +99,9 @@ export const CompetitionModal: React.FC<CompetitionModalProps> = ({
           onClick={(e) => e.stopPropagation()}
         >
           {/* Modal Header Banner */}
-          <div className={`h-36 sm:h-44 bg-gradient-to-r ${competition.bannerGradient} relative p-6 flex flex-col justify-between text-white overflow-hidden`}>
+          <div
+            className={`h-36 sm:h-44 bg-gradient-to-r ${competition.bannerGradient} relative p-6 flex flex-col justify-between text-white overflow-hidden`}
+          >
             <div className="absolute inset-0 bg-black/20 pointer-events-none" />
 
             <div className="relative z-10 flex items-center justify-between">
@@ -101,85 +135,66 @@ export const CompetitionModal: React.FC<CompetitionModalProps> = ({
             </div>
           </div>
 
-          {/* Modal Scrollable Body */}
-          <div className="p-6 overflow-y-auto space-y-6 flex-1 bg-white text-sm text-slate-700">
-            {/* Host Institution Info */}
-            <div className="flex items-center justify-between p-4 rounded-2xl bg-purple-50/70 border border-purple-100">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
-                  <ShieldCheck className="w-5 h-5 text-amber-300" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-1.5 font-bold text-slate-900">
-                    <span>{competition.organizer.name}</span>
-                    {competition.organizer.isVerified && (
-                      <CheckCircle2 className="w-4 h-4 text-purple-600" />
-                    )}
-                  </div>
-                  <div className="text-xs text-slate-500">
-                    Host Institution Domain: <span className="font-mono text-purple-700 font-semibold">@{competition.organizer.domain}</span> ({competition.organizer.type})
-                  </div>
-                </div>
+          {/* Modal Scrollable Content */}
+          <div className="p-6 overflow-y-auto space-y-6 flex-1 text-slate-700">
+            {errorMsg && (
+              <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-2 font-medium">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <span>{errorMsg}</span>
               </div>
-              <span className="text-[11px] font-bold px-2.5 py-1 bg-white text-purple-700 rounded-lg border border-purple-200 shadow-2xs">
-                Admin Verified
-              </span>
-            </div>
+            )}
 
             {/* Description */}
             <div>
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">About the Olympiad</h4>
-              <p className="text-slate-600 leading-relaxed text-sm">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+                Olympiad Overview
+              </h4>
+              <p className="text-sm text-slate-600 leading-relaxed">
                 {competition.description}
               </p>
             </div>
 
-            {/* Student Eligibility & Inter-School Delegation Form */}
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
-                  <UserCheck className="w-4 h-4 text-purple-600" />
-                  <span>Student Eligibility & School Delegation</span>
-                </div>
-                <span className="text-[10.5px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
-                  <Check className="w-3 h-3" />
-                  Eligible to Compete
-                </span>
+            {/* Verified Organizer Credential Box */}
+            <div className="p-4 rounded-2xl bg-purple-50/70 border border-purple-100 flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-purple-600 flex items-center justify-center text-white shrink-0 shadow-xs">
+                <Building2 className="w-5 h-5 text-amber-300" />
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <div className="p-3 bg-white rounded-xl border border-slate-200/80">
-                  <span className="text-[10px] text-slate-400 uppercase font-bold block mb-1">Target Grade Tier</span>
-                  <span className="font-bold text-slate-800">High School & Undergraduates</span>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-slate-900 text-sm">
+                    {competition.organizer.name}
+                  </span>
+                  {competition.organizer.isVerified && (
+                    <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                      Verified Institution
+                    </span>
+                  )}
                 </div>
-                <div className="p-3 bg-white rounded-xl border border-slate-200/80">
-                  <span className="text-[10px] text-slate-400 uppercase font-bold block mb-1">Min. Entry Rating</span>
-                  <span className="font-mono font-bold text-purple-700">1,200 (Novice / Pupil+)</span>
-                </div>
-              </div>
-
-              {/* School Representation Selector */}
-              <div className="pt-2">
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Representing School / University for Inter-Varsity Cup:
-                </label>
-                <select
-                  value={selectedStudentSchool}
-                  onChange={(e) => setSelectedStudentSchool(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-400"
-                >
-                  <option value="Stanford University">Stanford University (🇺🇸)</option>
-                  <option value="University of Cambridge">University of Cambridge (🇬🇧)</option>
-                  <option value="Massachusetts Institute of Technology">Massachusetts Institute of Technology (🇺🇸)</option>
-                  <option value="Phillips Exeter Academy">Phillips Exeter Academy (🇺🇸)</option>
-                  <option value="ETH Zürich">ETH Zürich (🇨🇭)</option>
-                  <option value="University of Tokyo">University of Tokyo (🇯🇵)</option>
-                  <option value="Independent Competitor">Independent / Other School</option>
-                </select>
-                <p className="text-[11px] text-slate-500 mt-1">
-                  Points gained in this Olympiad contribute directly to {selectedStudentSchool}'s Inter-School Championship standing.
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Official Domain: <strong>{competition.organizer.domain}</strong> • Accredited Host
                 </p>
               </div>
+            </div>
+
+            {/* Student School Affiliation Selector */}
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+              <div className="flex items-center gap-2">
+                <GraduationCap className="w-4 h-4 text-purple-600" />
+                <label className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                  Delegation / School Affiliation
+                </label>
+              </div>
+              <select
+                value={selectedStudentSchool}
+                onChange={(e) => setSelectedStudentSchool(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-white border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-200"
+              >
+                <option value="Stanford University">Stanford University (Collegiate Division)</option>
+                <option value="University of Cambridge">University of Cambridge (Cavendish Lab)</option>
+                <option value="Massachusetts Institute of Technology">MIT Olympiad Chapter</option>
+                <option value="Independent Competitor">Independent / Self-Registered Competitor</option>
+              </select>
             </div>
 
             {/* Schedule & Logistics Grid */}
@@ -246,7 +261,7 @@ export const CompetitionModal: React.FC<CompetitionModalProps> = ({
               </button>
               {competition.status === "live" ? (
                 <a
-                  href="/quiz-attempt"
+                  href={`/quiz-attempt?contestId=${competition.id}`}
                   className="px-6 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs sm:text-sm shadow-md shadow-rose-600/30 transition-all flex items-center gap-2 cursor-pointer"
                 >
                   <span>Enter Live Quiz Arena</span>
@@ -255,14 +270,16 @@ export const CompetitionModal: React.FC<CompetitionModalProps> = ({
               ) : (
                 <button
                   onClick={handleRegister}
-                  disabled={isRegistered}
+                  disabled={isRegistered || isRegistering}
                   className={`px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm shadow-md transition-all flex items-center gap-1.5 cursor-pointer ${
                     isRegistered
                       ? "bg-emerald-600 text-white shadow-emerald-600/25"
                       : "bg-purple-600 hover:bg-purple-700 text-white shadow-purple-600/25 active:scale-98"
                   }`}
                 >
-                  {isRegistered ? (
+                  {isRegistering ? (
+                    <span>Registering...</span>
+                  ) : isRegistered ? (
                     <>
                       <Check className="w-4 h-4" /> Registered as {selectedStudentSchool}
                     </>

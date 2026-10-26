@@ -8,17 +8,20 @@ import {
   Flame,
   Compass,
   Trophy,
-  BookOpen,
   Award,
   Menu,
   X,
   ShieldCheck,
   ChevronRight,
-  User,
-  Sparkles,
+  User as UserIcon,
   Building2,
-  GraduationCap,
+  Bell,
+  LogOut,
+  ChevronDown,
+  LayoutDashboard,
+  ShieldAlert,
 } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 interface NavbarProps {
   currentRole?: "student" | "organizer" | "admin";
@@ -27,11 +30,13 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
-  currentRole = "student",
+  currentRole,
   onRoleChange,
   onOpenAuthModal,
 }) => {
+  const { user, role, isAuthenticated, logout, unreadNotificationsCount } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [hoveredLink, setHoveredLink] = useState<string | null>(null);
   const pathname = usePathname();
@@ -50,6 +55,8 @@ export const Navbar: React.FC<NavbarProps> = ({
     { label: "Leaderboard", href: "/#leaderboard-preview", icon: Trophy, badge: "Live" },
     { label: "Scorecards", href: "/verify", icon: Award },
   ];
+
+  const effectiveRole = role ? (role.toLowerCase() as "student" | "organizer" | "admin") : currentRole || "student";
 
   return (
     <header
@@ -82,9 +89,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 Olympido
               </span>
-              <span
-                className="text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider bg-purple-100 text-purple-700 border border-purple-200/80 shadow-2xs"
-              >
+              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider bg-purple-100 text-purple-700 border border-purple-200/80 shadow-2xs">
                 Arena
               </span>
             </div>
@@ -94,11 +99,11 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </Link>
 
-        {/* Desktop Navigation with Modern Pill Hover */}
+        {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-0.5 lg:gap-1">
           {navLinks.map((link) => {
             const Icon = link.icon;
-            const isHovered = hoveredLink === link.label;
+            const isActive = pathname === link.href;
 
             return (
               <Link
@@ -106,55 +111,52 @@ export const Navbar: React.FC<NavbarProps> = ({
                 href={link.href}
                 onMouseEnter={() => setHoveredLink(link.label)}
                 onMouseLeave={() => setHoveredLink(null)}
-                className="relative flex items-center gap-1.5 px-2 xl:px-3 py-1.5 rounded-xl text-xs xl:text-sm font-semibold transition-all duration-200 text-slate-700 hover:text-purple-700 whitespace-nowrap shrink-0"
+                className={`relative px-3.5 py-2 rounded-xl text-xs lg:text-sm font-semibold transition-all flex items-center gap-1.5 ${
+                  isActive
+                    ? "text-purple-700 bg-purple-50/80 font-bold"
+                    : "text-slate-700 hover:text-slate-950"
+                }`}
               >
-                {/* Background hover pill with spring animation */}
-                {isHovered && (
+                {hoveredLink === link.label && !isActive && (
                   <motion.div
-                    layoutId="navbar-hover-pill"
-                    className="absolute inset-0 bg-purple-50/90 rounded-xl border border-purple-100 shadow-2xs"
-                    transition={{ type: "spring", stiffness: 450, damping: 30 }}
+                    layoutId="navbar-hover"
+                    className="absolute inset-0 bg-slate-100/80 rounded-xl -z-10"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}
-
-                <span className="relative z-10 flex items-center gap-1 xl:gap-2">
-                  <Icon className={`w-3.5 h-3.5 xl:w-4 xl:h-4 transition-colors shrink-0 hidden lg:inline ${isHovered ? "text-purple-600" : "text-slate-400"}`} />
-                  <span className="whitespace-nowrap">{link.label}</span>
-                  {link.badge && (
-                    <span className="hidden xl:inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-50 text-rose-600 border border-rose-200/80 ring-2 ring-rose-500/15 shrink-0">
-                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
-                      {link.badge}
-                    </span>
-                  )}
-                </span>
+                <Icon className={`w-4 h-4 ${isActive ? "text-purple-600" : "text-slate-500"}`} />
+                <span>{link.label}</span>
+                {link.badge && (
+                  <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded-full uppercase tracking-wider bg-rose-50 text-rose-600 border border-rose-200 shadow-2xs">
+                    {link.badge}
+                  </span>
+                )}
               </Link>
             );
           })}
         </nav>
 
-        {/* Right Actions: Role Selector + Sign In */}
-        <div className="flex items-center gap-2.5 shrink-0">
-          {/* Segmented Multi-Role Switcher with Depth */}
-          <div className="hidden lg:flex items-center p-1 rounded-xl bg-slate-100 border border-slate-200/80 shadow-inner">
-            <button
-              onClick={() => {
-                onRoleChange?.("student");
-                if (pathname !== "/") router.push("/");
-              }}
+        {/* Right Section: Role Switches & Auth */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Role Hub Switcher for quick portal navigation */}
+          <div className="hidden lg:flex items-center p-1 rounded-xl bg-slate-100/90 border border-slate-200/70 shadow-2xs">
+            <Link
+              href="/"
+              onClick={() => onRoleChange?.("student")}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                currentRole === "student" && !pathname.includes("/organizer") && !pathname.includes("/admin")
-                  ? "bg-white text-purple-700 shadow-sm border border-slate-200/60"
+                effectiveRole === "student" && !pathname.includes("/organizer") && !pathname.includes("/admin")
+                  ? "bg-white text-purple-700 shadow-xs border border-slate-200/60"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
               Student
-            </button>
+            </Link>
             <Link
               href="/organizer"
               onClick={() => onRoleChange?.("organizer")}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
-                pathname.includes("/organizer") || currentRole === "organizer"
-                  ? "bg-purple-600 text-white shadow-sm shadow-purple-500/30"
+                pathname.includes("/organizer") || effectiveRole === "organizer"
+                  ? "bg-purple-600 text-white shadow-xs shadow-purple-500/30"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
@@ -164,8 +166,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Link
               href="/admin"
               className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap ${
-                pathname.includes("/admin")
-                  ? "bg-slate-900 text-white shadow-sm"
+                pathname.includes("/admin") || effectiveRole === "admin"
+                  ? "bg-slate-900 text-white shadow-xs"
                   : "text-slate-500 hover:text-slate-900"
               }`}
             >
@@ -173,18 +175,110 @@ export const Navbar: React.FC<NavbarProps> = ({
             </Link>
           </div>
 
-          {/* Sleek, Modern Sign In Button with Perfect Alignment */}
-          <motion.button
-            whileHover={{ scale: 1.02, y: -1 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={onOpenAuthModal}
-            className="h-9 px-4 rounded-xl text-xs sm:text-sm font-bold text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 shadow-xs hover:shadow-md transition-all flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer group"
-          >
-            <span className="w-5 h-5 rounded-lg bg-white/10 flex items-center justify-center shrink-0 group-hover:bg-purple-600/30 transition-colors">
-              <User className="w-3 h-3 text-slate-200 group-hover:text-purple-300 transition-colors" />
-            </span>
-            <span className="whitespace-nowrap font-bold tracking-tight">Sign In</span>
-          </motion.button>
+          {/* User Profile or Sign In Button */}
+          {isAuthenticated && user ? (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                className="h-9 px-3 rounded-xl bg-white hover:bg-slate-50 border border-slate-200/90 shadow-xs flex items-center gap-2 cursor-pointer transition-all"
+              >
+                <div className="w-6 h-6 rounded-lg bg-purple-600 text-white font-black text-xs flex items-center justify-center uppercase shadow-xs">
+                  {user.fullName?.charAt(0) || user.username?.charAt(0) || "U"}
+                </div>
+                <div className="hidden sm:flex flex-col text-left">
+                  <span className="text-xs font-extrabold text-slate-900 leading-tight max-w-[120px] truncate">
+                    {user.fullName || user.username}
+                  </span>
+                  <span className="text-[10px] text-purple-600 font-bold uppercase tracking-wider">
+                    {user.role}
+                  </span>
+                </div>
+                {unreadNotificationsCount > 0 && (
+                  <span className="w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white" />
+                )}
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              </button>
+
+              {/* User Dropdown */}
+              <AnimatePresence>
+                {userDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: 8 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 8 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 mt-2 w-56 rounded-2xl bg-white border border-slate-200 shadow-xl p-2 z-50 text-xs"
+                  >
+                    <div className="px-3 py-2 border-b border-slate-100 mb-1">
+                      <p className="font-bold text-slate-900 truncate">{user.fullName}</p>
+                      <p className="text-slate-500 text-[11px] truncate">@{user.username}</p>
+                      {user.studentStats && (
+                        <p className="text-purple-600 font-bold text-[11px] mt-0.5">
+                          Rating: {user.studentStats.currentRating} • Points: {Number(user.studentStats.totalPoints)}
+                        </p>
+                      )}
+                    </div>
+
+                    <Link
+                      href="/profile"
+                      onClick={() => setUserDropdownOpen(false)}
+                      className="flex items-center gap-2 px-3 py-2 rounded-xl text-slate-700 hover:text-purple-700 hover:bg-purple-50 font-semibold transition-colors"
+                    >
+                      <UserIcon className="w-4 h-4 text-purple-600" />
+                      <span>My Profile & Stats</span>
+                    </Link>
+
+                    {(user.role === "ORGANIZER" || user.role === "ADMIN" || user.role === "TEACHER") && (
+                      <Link
+                        href="/organizer"
+                        onClick={() => setUserDropdownOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2 rounded-xl text-slate-700 hover:text-purple-700 hover:bg-purple-50 font-semibold transition-colors"
+                      >
+                        <LayoutDashboard className="w-4 h-4 text-purple-600" />
+                        <span>Organizer Console</span>
+                      </Link>
+                    )}
+
+                    {user.role === "ADMIN" && (
+                      <Link
+                        href="/admin"
+                        onClick={() => setUserDropdownOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2 rounded-xl text-slate-700 hover:text-purple-700 hover:bg-purple-50 font-semibold transition-colors"
+                      >
+                        <ShieldAlert className="w-4 h-4 text-slate-800" />
+                        <span>Admin Desk</span>
+                      </Link>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUserDropdownOpen(false);
+                        logout();
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-rose-600 hover:bg-rose-50 font-semibold transition-colors mt-1 border-t border-slate-100 cursor-pointer"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Sign Out</span>
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ) : (
+            <motion.button
+              whileHover={{ scale: 1.02, y: -1 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={onOpenAuthModal}
+              className="h-9 px-4 rounded-xl text-xs sm:text-sm font-bold text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 shadow-xs hover:shadow-md transition-all flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer group"
+            >
+              <span className="w-5 h-5 rounded-lg bg-white/10 flex items-center justify-center shrink-0 group-hover:bg-purple-600/30 transition-colors">
+                <UserIcon className="w-3 h-3 text-slate-200 group-hover:text-purple-300 transition-colors" />
+              </span>
+              <span className="whitespace-nowrap font-bold tracking-tight">Sign In</span>
+            </motion.button>
+          )}
 
           {/* Mobile menu toggle */}
           <button
@@ -197,7 +291,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
 
-      {/* Mobile Drawer with Smooth Animation */}
+      {/* Mobile Drawer */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
@@ -237,7 +331,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 className="flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-semibold text-slate-800 hover:text-purple-700 hover:bg-purple-50 transition-all"
               >
                 <div className="flex items-center gap-3">
-                  <User className="w-4 h-4 text-purple-600" />
+                  <UserIcon className="w-4 h-4 text-purple-600" />
                   <span>Student Profile</span>
                 </div>
                 <ChevronRight className="w-4 h-4 text-slate-400" />

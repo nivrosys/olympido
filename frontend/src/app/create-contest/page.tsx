@@ -7,6 +7,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Navbar } from "../../components/Navbar";
 import { Footer } from "../../components/Footer";
 import { submitNewContestForApproval } from "../../data/contestStore";
+import { contestsApi, questionsApi } from "../../lib/api";
+import { ContestCategory, DifficultyLevel } from "../../types/api";
 import { 
   Building2, 
   CheckCircle2, 
@@ -133,7 +135,7 @@ export default function CreateContestPage() {
     setQuestions(questions.map((q) => (q.id === qId ? { ...q, correctOption: optIdx } : q)));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
@@ -145,6 +147,61 @@ export default function CreateContestPage() {
       astronomy: "Astronomy & Space",
       biology: "Biology & Life Sciences",
     };
+
+    const categoryEnumMap: Record<string, ContestCategory> = {
+      physics: "PHYSICS",
+      mathematics: "MATHEMATICS",
+      coding: "INFORMATICS",
+      chemistry: "CHEMISTRY",
+      astronomy: "ASTRONOMY",
+      biology: "BIOLOGY",
+    };
+
+    const difficultyEnumMap: Record<string, DifficultyLevel> = {
+      "School Level": "SCHOOL",
+      "Regional Olympiad": "REGIONAL",
+      "National Olympiad": "NATIONAL",
+      International: "INTERNATIONAL",
+    };
+
+    try {
+      const startTime = new Date(`${contestDate}T${contestTime.replace(' UTC', '') || '14:00'}:00Z`).toISOString();
+      const endTime = new Date(new Date(startTime).getTime() + Number(durationMinutes) * 60000).toISOString();
+
+      const createdContest = await contestsApi.create({
+        title: title || "Custom Academic Olympiad 2026",
+        description: description || "Rigorous academic competition organized under institutional supervision.",
+        category: categoryEnumMap[category] || "PHYSICS",
+        difficultyLevel: difficultyEnumMap[difficulty] || "NATIONAL",
+        startTime,
+        endTime,
+        durationMinutes: Number(durationMinutes),
+        pointsAwarded: Number(pointsAwarded),
+        maxParticipants: Number(maxCapacity),
+        isPublic: true,
+        bannerUrl: bannerGradient,
+      });
+
+      if (createdContest?.id) {
+        // Sequentially create questions
+        for (let i = 0; i < questions.length; i++) {
+          const q = questions[i];
+          await questionsApi.create(createdContest.id, {
+            title: `Problem ${i + 1}`,
+            prompt: q.prompt,
+            type: q.type === "mcq" ? "MCQ" : "THEORETICAL",
+            options: q.options,
+            correctAnswer: q.type === "mcq" ? { selectedOption: q.correctOption } : { rubric: "Theoretical proof criteria" },
+            points: q.points,
+          });
+        }
+
+        // Submit to platform admin review queue
+        await contestsApi.submitReview(createdContest.id);
+      }
+    } catch (apiErr) {
+      console.warn("Backend API contest creation notice:", apiErr);
+    }
 
     submitNewContestForApproval({
       title: title || "Custom Academic Olympiad 2026",
@@ -179,10 +236,8 @@ export default function CreateContestPage() {
       },
     });
 
-    setTimeout(() => {
-      setIsSubmitting(false);
-      router.push("/admin");
-    }, 1200);
+    setIsSubmitting(false);
+    router.push("/admin");
   };
 
   const steps = [

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Navbar } from "../components/Navbar";
 import { HeroSection } from "../components/HeroSection";
 import { CategoryFilter } from "../components/CategoryFilter";
@@ -11,15 +11,17 @@ import { LeaderboardSection } from "../components/LeaderboardSection";
 import { HowItWorks } from "../components/HowItWorks";
 import { Footer } from "../components/Footer";
 import { MOCK_COMPETITIONS, Competition } from "../data/mockCompetitions";
+import { contestsApi } from "../lib/api";
+import { adaptContestToCompetition } from "../lib/adapters";
 import { 
   Sparkles, 
   Flame, 
   Search, 
   ShieldCheck, 
-  AlertCircle,
-  PlusCircle,
-  CheckCircle2,
-  Filter,
+  AlertCircle, 
+  PlusCircle, 
+  CheckCircle2, 
+  Filter, 
   ArrowRight,
 } from "lucide-react";
 import Link from "next/link";
@@ -32,10 +34,37 @@ export default function Home() {
   const [selectedCompetition, setSelectedCompetition] = useState<Competition | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
+  const [apiCompetitions, setApiCompetitions] = useState<Competition[]>([]);
+  const [isLoadingContests, setIsLoadingContests] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadContests() {
+      try {
+        const res = await contestsApi.findAll();
+        if (res && res.contests && res.contests.length > 0 && isMounted) {
+          const adapted = res.contests.map(adaptContestToCompetition);
+          setApiCompetitions(adapted);
+        }
+      } catch (err) {
+        console.warn("Backend not active or empty, using catalog fallback:", err);
+      } finally {
+        if (isMounted) setIsLoadingContests(false);
+      }
+    }
+    void loadContests();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const baseCompetitions = useMemo(() => {
+    return apiCompetitions.length > 0 ? apiCompetitions : MOCK_COMPETITIONS;
+  }, [apiCompetitions]);
 
   // Filter competitions based on search, category, and status
   const filteredCompetitions = useMemo(() => {
-    return MOCK_COMPETITIONS.filter((item) => {
+    return baseCompetitions.filter((item) => {
       const matchesSearch =
         searchQuery.trim() === "" ||
         item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -51,11 +80,11 @@ export default function Home() {
 
       return matchesSearch && matchesCategory && matchesStatus;
     });
-  }, [searchQuery, selectedCategory, statusFilter]);
+  }, [baseCompetitions, searchQuery, selectedCategory, statusFilter]);
 
   const featuredCompetitions = useMemo(() => {
-    return MOCK_COMPETITIONS.filter((item) => item.isFeatured);
-  }, []);
+    return baseCompetitions.filter((item) => item.isFeatured);
+  }, [baseCompetitions]);
 
   const triggerNotification = (message: string) => {
     setNotification(message);
@@ -296,6 +325,7 @@ export default function Home() {
       <CompetitionModal
         competition={selectedCompetition}
         onClose={() => setSelectedCompetition(null)}
+        onRequireAuth={() => setIsAuthModalOpen(true)}
         onRegisterSuccess={(title) => {
           triggerNotification(`Successfully registered for: ${title}! Check your scorecards.`);
         }}

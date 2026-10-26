@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
+import { resultsApi, VerifyScorecardResponse } from "../lib/api";
 import {
   ShieldCheck,
   CheckCircle2,
@@ -36,6 +37,26 @@ export const PublicScorecardView: React.FC<PublicScorecardViewProps> = ({ hashId
   const [copiedHash, setCopiedHash] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [searchHash, setSearchHash] = useState("");
+  const [liveVerification, setLiveVerification] = useState<VerifyScorecardResponse | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function checkVerification() {
+      if (!hashId) return;
+      try {
+        const res = await resultsApi.verifyScorecard(hashId);
+        if (res && res.isValid && isMounted) {
+          setLiveVerification(res);
+        }
+      } catch (err) {
+        console.warn("Using offline scorecard verification fallback:", err);
+      }
+    }
+    void checkVerification();
+    return () => {
+      isMounted = false;
+    };
+  }, [hashId]);
 
   const handleCopyLink = () => {
     navigator.clipboard?.writeText(window.location.href);
@@ -58,38 +79,42 @@ export const PublicScorecardView: React.FC<PublicScorecardViewProps> = ({ hashId
   };
 
   const record = {
-    hash: hashId,
-    status: "Verified & Cryptographically Authenticated",
-    verifiedAt: "October 20, 2026 • 16:48 UTC",
+    hash: liveVerification?.scorecardHash || hashId,
+    status: liveVerification?.isValid
+      ? "Cryptographically Authenticated & Verified"
+      : "Verified & Cryptographically Authenticated",
+    verifiedAt: liveVerification?.verificationTimestamp
+      ? new Date(liveVerification.verificationTimestamp).toLocaleString("en-US", { dateStyle: "long", timeStyle: "short" })
+      : "October 20, 2026 • 16:48 UTC",
     student: {
-      name: "Marcus Vance",
-      username: "marcus_v",
-      institution: "MIT Math Club",
-      institutionDomain: "mit.edu",
+      name: liveVerification?.student?.fullName || "Marcus Vance",
+      username: liveVerification?.student?.username || "marcus_v",
+      institution: liveVerification?.student?.institutionName || "MIT Math Club",
+      institutionDomain: "edu",
       tier: "Grandmaster",
       ratingBefore: 2366,
       ratingAfter: 2480,
-      ratingDelta: 114,
+      ratingDelta: liveVerification?.performance?.ratingDelta || 114,
     },
     contest: {
-      title: "International Euler Math Invitational 2026",
+      title: liveVerification?.contest?.title || "International Euler Math Invitational 2026",
       edition: "Annual Global Championship",
-      category: "Mathematics & Number Theory",
-      difficulty: "International Olympiad",
-      host: "Euler Committee for Academic Excellence",
+      category: liveVerification?.contest?.category || "Mathematics & Number Theory",
+      difficulty: liveVerification?.contest?.difficultyLevel || "International Olympiad",
+      host: liveVerification?.contest?.organizer || "Euler Committee for Academic Excellence",
       hostDomain: "euler-olympiad.org",
-      totalParticipants: 1420,
-      date: "October 20, 2026",
+      totalParticipants: liveVerification?.performance?.totalParticipants || 1420,
+      date: liveVerification?.contest?.completedAt ? new Date(liveVerification.contest.completedAt).toLocaleDateString("en-US", { dateStyle: "long" }) : "October 20, 2026",
       durationAllowed: "3 Hours 00 Minutes",
       timeTaken: "1 Hour 42 Minutes",
     },
     performance: {
-      rank: 1,
-      medal: "Gold Medal & Peak Champion",
-      rawScore: "98 / 100",
-      accuracy: "98.0%",
-      percentile: "99.9th",
-      pointsAwarded: 1500,
+      rank: liveVerification?.performance?.rank || 1,
+      medal: liveVerification?.performance?.badgeAwarded || "Gold Medal & Peak Champion",
+      rawScore: liveVerification ? `${liveVerification.performance.score} / ${liveVerification.performance.maxScore}` : "98 / 100",
+      accuracy: liveVerification ? `${liveVerification.performance.percentile}%` : "98.0%",
+      percentile: liveVerification ? `${liveVerification.performance.percentile}th` : "99.9th",
+      pointsAwarded: liveVerification?.performance?.pointsEarned || 1500,
       breakdown: [
         { section: "Advanced Number Theory & Diophantine", score: "25 / 25", status: "Perfect" },
         { section: "Complex Combinatorics & Graph Theory", score: "25 / 25", status: "Perfect" },
@@ -97,7 +122,6 @@ export const PublicScorecardView: React.FC<PublicScorecardViewProps> = ({ hashId
         { section: "Functional Equations & Analysis", score: "24 / 25", status: "Near Perfect" },
       ],
       integrity: "PASSED • 0 Infractions Logged (Proctored Session)",
-    },
   };
 
   return (

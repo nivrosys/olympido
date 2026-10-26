@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
 import { MOCK_STUDENT_PROFILES, StudentProfileData } from "../data/mockProfile";
+import { useAuth } from "../context/AuthContext";
 import {
   Trophy,
   Award,
@@ -32,11 +33,31 @@ import {
 } from "lucide-react";
 
 interface StudentProfileViewProps {
-  username: string;
+  username?: string;
 }
 
 export const StudentProfileView: React.FC<StudentProfileViewProps> = ({ username }) => {
-  const profile: StudentProfileData = MOCK_STUDENT_PROFILES[username] || MOCK_STUDENT_PROFILES.marcus_v;
+  const { user } = useAuth();
+  const targetUsername = username || user?.username || "marcus_v";
+  const mockProfile: StudentProfileData = MOCK_STUDENT_PROFILES[targetUsername] || MOCK_STUDENT_PROFILES.marcus_v;
+
+  const profile: StudentProfileData =
+    user && (user.username === targetUsername || !username)
+      ? {
+          ...mockProfile,
+          fullName: user.fullName || mockProfile.fullName,
+          username: user.username || mockProfile.username,
+          institution: user.institutionName || mockProfile.institution,
+          rating: user.studentStats?.currentRating || mockProfile.rating,
+          peakRating: user.studentStats?.peakRating || mockProfile.peakRating,
+          totalPoints: user.studentStats?.totalPoints
+            ? Number(user.studentStats.totalPoints)
+            : mockProfile.totalPoints,
+          contestsParticipated:
+            user.studentStats?.contestsParticipated || mockProfile.contestsParticipated,
+          podiumsCount: user.studentStats?.podiumFinishes || mockProfile.podiumsCount,
+        }
+      : mockProfile;
 
   const [activeTab, setActiveTab] = useState<"contests" | "achievements" | "subjects">("contests");
   const [copiedLink, setCopiedLink] = useState(false);

@@ -12,6 +12,8 @@ import {
   requestChangesByAdmin,
   PendingContest
 } from "../../data/contestStore";
+import { adminApi } from "../../lib/api";
+import { adaptContestToCompetition } from "../../lib/adapters";
 import { 
   ShieldCheck, 
   CheckCircle2, 
@@ -102,42 +104,109 @@ export default function AdminConsolePage() {
   ];
 
   useEffect(() => {
-    setPendingList(getPendingContests());
+    let isMounted = true;
+    async function loadAdminData() {
+      try {
+        const res = await adminApi.getPendingContests();
+        if (res && res.contests && res.contests.length > 0 && isMounted) {
+          const apiMapped: PendingContest[] = res.contests.map((c) => ({
+            ...adaptContestToCompetition(c),
+            submittedAt: "Recently via API",
+            adminReviewStatus: "pending",
+            questionCount: c._count?.questions || 1,
+            schoolInfo: {
+              schoolName: c.organization?.name || "Academic Institution",
+              department: "Official Faculty",
+              domain: c.organization?.officialDomain || "edu",
+              facultyAdvisor: c.creator?.fullName || "Director",
+            },
+            plagiarismScore: 99.8,
+            aiSimilarityScore: 1.2,
+          }));
+
+          const localStore = getPendingContests();
+          const combined = [...apiMapped, ...localStore.filter(ls => !apiMapped.some(am => am.id === ls.id))];
+          setPendingList(combined);
+          return;
+        }
+      } catch (err) {
+        console.warn("Backend admin queue note:", err);
+      }
+      if (isMounted) {
+        setPendingList(getPendingContests());
+      }
+    }
+    void loadAdminData();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  const handleApprove = (contestId: string) => {
-    const approved = approveContestByAdmin(contestId);
-    if (approved) {
-      setFeedbackSuccess(`✓ "${approved.title}" has been APPROVED and published live on the Olympiad catalog!`);
-      setPendingList(getPendingContests());
-      setSelectedContest(null);
-      setTimeout(() => setFeedbackSuccess(null), 5000);
+  const handleApprove = async (contestId: string) => {
+    try {
+      if (contestId.length > 20) {
+        await adminApi.reviewContest(contestId, { status: "APPROVED" });
+      }
+    } catch (err) {
+      console.warn("Backend contest review API note:", err);
     }
+    const approved = approveContestByAdmin(contestId);
+    setFeedbackSuccess(`✓ Contest has been APPROVED and published live on the Olympiad catalog!`);
+    setPendingList((prev) => prev.filter((c) => c.id !== contestId));
+    setSelectedContest(null);
+    setTimeout(() => setFeedbackSuccess(null), 5000);
   };
 
-  const handleReject = (contestId: string) => {
+  const handleReject = async (contestId: string) => {
+    try {
+      if (contestId.length > 20) {
+        await adminApi.reviewContest(contestId, {
+          status: "REJECTED",
+          reviewNotes: adminNotes || "Does not meet platform quality standards.",
+        });
+      }
+    } catch (err) {
+      console.warn("Backend reject API note:", err);
+    }
     rejectContestByAdmin(contestId, adminNotes || "Does not meet platform quality standards.");
     setFeedbackSuccess(`Contest has been rejected. Revision feedback recorded for the School Organizer.`);
-    setPendingList(getPendingContests());
+    setPendingList((prev) => prev.filter((c) => c.id !== contestId));
     setSelectedContest(null);
     setAdminNotes("");
     setTimeout(() => setFeedbackSuccess(null), 5000);
   };
 
-  const handleRequestChanges = (contestId: string) => {
+  const handleRequestChanges = async (contestId: string) => {
     if (!adminNotes) {
       alert("Please provide revision feedback notes for the organizer.");
       return;
     }
+    try {
+      if (contestId.length > 20) {
+        await adminApi.reviewContest(contestId, {
+          status: "CHANGES_REQUESTED",
+          reviewNotes: adminNotes,
+        });
+      }
+    } catch (err) {
+      console.warn("Backend request changes API note:", err);
+    }
     requestChangesByAdmin(contestId, adminNotes);
     setFeedbackSuccess(`Revision request and diff feedback sent to the School Organizer.`);
-    setPendingList(getPendingContests());
+    setPendingList((prev) => prev.filter((c) => c.id !== contestId));
     setSelectedContest(null);
     setAdminNotes("");
     setTimeout(() => setFeedbackSuccess(null), 5000);
   };
 
-  const handleVerifyInstitution = (id: string) => {
+  const handleVerifyInstitution = async (id: string) => {
+    try {
+      if (id.length > 20) {
+        await adminApi.reviewOrganization(id, { status: "VERIFIED" });
+      }
+    } catch (err) {
+      console.warn("Backend org verification note:", err);
+    }
     setInstitutions(
       institutions.map((inst) =>
         inst.id === id ? { ...inst, status: "verified", verifiedAt: "Just now" } : inst

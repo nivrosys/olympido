@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Navbar } from "../../components/Navbar";
 import { Footer } from "../../components/Footer";
 import { MOCK_INSTITUTIONS, Institution } from "../../data/mockInstitutions";
+import { organizationsApi } from "../../lib/api";
 import {
   Building2,
   GraduationCap,
@@ -30,9 +31,50 @@ export default function InstitutionsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<string>("all");
   const [selectedInstitution, setSelectedInstitution] = useState<Institution | null>(null);
+  const [apiInstitutions, setApiInstitutions] = useState<Institution[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadOrgs() {
+      try {
+        const res = await organizationsApi.findAll();
+        if (res && res.organizations && res.organizations.length > 0 && isMounted) {
+          const mapped: Institution[] = res.organizations.map((org, idx) => ({
+            id: org.id,
+            name: org.name,
+            domain: org.officialDomain,
+            type: "University",
+            country: "Global",
+            accreditationLevel: "Accredited Member Institution",
+            isVerified: org.status === "VERIFIED",
+            totalPoints: 12500 - idx * 1200,
+            goldMedals: 4,
+            silverMedals: 8,
+            bronzeMedals: 12,
+            activeStudentsCount: 350,
+            facultyAdvisor: "Academic Chair",
+            description: `Official Olympiad delegation and accredited host body for ${org.name}.`,
+            hostedContestsCount: org.contests?.length || 1,
+            bannerGradient: "from-blue-600 via-indigo-700 to-purple-900",
+          }));
+          setApiInstitutions(mapped);
+        }
+      } catch (err) {
+        console.warn("Using fallback institutions catalogue:", err);
+      }
+    }
+    void loadOrgs();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const baseInstitutions = useMemo(() => {
+    return apiInstitutions.length > 0 ? apiInstitutions : MOCK_INSTITUTIONS;
+  }, [apiInstitutions]);
 
   const filteredInstitutions = useMemo(() => {
-    return MOCK_INSTITUTIONS.filter((inst) => {
+    return baseInstitutions.filter((inst) => {
       const matchesSearch =
         searchQuery.trim() === "" ||
         inst.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -47,11 +89,11 @@ export default function InstitutionsPage() {
 
       return matchesSearch && matchesType;
     });
-  }, [searchQuery, selectedType]);
+  }, [baseInstitutions, searchQuery, selectedType]);
 
   const topPodium = useMemo(() => {
-    return [...MOCK_INSTITUTIONS].sort((a, b) => b.totalPoints - a.totalPoints).slice(0, 3);
-  }, []);
+    return [...baseInstitutions].sort((a, b) => b.totalPoints - a.totalPoints).slice(0, 3);
+  }, [baseInstitutions]);
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 font-sans selection:bg-purple-100 selection:text-purple-900 relative overflow-x-clip">
