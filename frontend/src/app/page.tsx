@@ -46,8 +46,8 @@ export default function Home() {
           const adapted = res.contests.map(adaptContestToCompetition);
           setApiCompetitions(adapted);
         }
-      } catch (err) {
-        console.warn("Backend not active or empty, using catalog fallback:", err);
+      } catch (err: any) {
+        console.debug("Backend offline note (using catalog fallback):", err?.message || err);
       } finally {
         if (isMounted) setIsLoadingContests(false);
       }

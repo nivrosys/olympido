@@ -31,9 +31,9 @@ export const Footer: React.FC = () => {
           <div>
             <h4 className="text-white font-bold text-xs uppercase tracking-wider mb-3">For Students</h4>
             <ul className="space-y-2">
-              <li><a href="#explore-section" className="hover:text-white transition-colors">Browse Competitions</a></li>
-              <li><a href="#leaderboard-preview" className="hover:text-white transition-colors">Global Leaderboard</a></li>
-              <li><a href="#scorecards-preview" className="hover:text-white transition-colors">Digital Scorecards</a></li>
+              <li><Link href="/#explore-section" className="hover:text-white transition-colors">Browse Competitions</Link></li>
+              <li><Link href="/leaderboard" className="hover:text-white transition-colors">Global Leaderboard</Link></li>
+              <li><Link href="/verify" className="hover:text-white transition-colors">Digital Scorecards</Link></li>
               <li><a href="#" className="hover:text-white transition-colors">Practice Quizzes</a></li>
             </ul>
           </div>

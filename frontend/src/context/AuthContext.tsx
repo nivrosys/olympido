@@ -68,7 +68,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
       void refreshNotificationsCount();
     } catch (err: any) {
-      console.warn("Failed to load authenticated user profile:", err.message);
+      console.debug("Failed to load authenticated user profile (session fallback active):", err?.message || err);
       // If unauthorized, clean up
       if (err.statusCode === 401) {
         clearTokens();

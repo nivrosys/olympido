@@ -122,6 +122,7 @@ export const PublicScorecardView: React.FC<PublicScorecardViewProps> = ({ hashId
         { section: "Functional Equations & Analysis", score: "24 / 25", status: "Near Perfect" },
       ],
       integrity: "PASSED • 0 Infractions Logged (Proctored Session)",
+    },
   };
 
   return (

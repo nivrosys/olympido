@@ -52,7 +52,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { label: "Home", href: "/", icon: Flame },
     { label: "Explore", href: "/#explore-section", icon: Compass },
     { label: "Schools", href: "/institutions", icon: Building2 },
-    { label: "Leaderboard", href: "/#leaderboard-preview", icon: Trophy, badge: "Live" },
+    { label: "Leaderboard", href: "/leaderboard", icon: Trophy, badge: "Live" },
     { label: "Scorecards", href: "/verify", icon: Award },
   ];
 

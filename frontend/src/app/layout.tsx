@@ -1,19 +1,6 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "../context/AuthContext";
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-mono",
-  subsets: ["latin"],
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "Olympido — Competitive Academic Olympiad & Contest Arena",
@@ -30,19 +17,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
-    >
+    <html lang="en" className="h-full antialiased">
       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap"
           rel="stylesheet"
         />
       </head>
       <body
         suppressHydrationWarning
-        className="min-h-full flex flex-col"
+        className="min-h-full flex flex-col font-sans"
         style={{
           fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
           backgroundColor: "var(--bg-canvas)",

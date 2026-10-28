@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 import {
   Trophy,
   TrendingUp,
@@ -16,6 +17,7 @@ import {
   Minus,
   Sparkles,
   ExternalLink,
+  ChevronRight,
 } from "lucide-react";
 import { leaderboardsApi } from "../lib/api";
 
@@ -99,8 +101,8 @@ export const LeaderboardSection: React.FC = () => {
           });
           setApiLeaders(mapped);
         }
-      } catch (err) {
-        console.warn("Using fallback leaderboard data:", err);
+      } catch (err: any) {
+        console.debug("Backend offline note (using fallback leaderboard):", err?.message || err);
       }
     }
     void loadLeaderboard();
@@ -426,6 +428,20 @@ export const LeaderboardSection: React.FC = () => {
                 ))}
               </tbody>
             </table>
+
+            {/* View Full Leaderboard Hub CTA */}
+            <div className="p-4 sm:p-5 bg-slate-50 border-t border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <span className="text-xs text-slate-500 font-medium">
+                Showing Top 10 preview. Explore all disciplines, regional divisions &amp; 3D podium.
+              </span>
+              <Link
+                href="/leaderboard"
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs shadow-md shadow-purple-600/25 transition-all"
+              >
+                <span>View Dedicated Leaderboards Hub</span>
+                <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
           </div>
         </div>
       </div>
