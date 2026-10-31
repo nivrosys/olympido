@@ -22,7 +22,14 @@ async function bootstrap() {
   // CORS configuration
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
   app.enableCors({
-    origin: [frontendUrl, 'http://localhost:3000', 'http://127.0.0.1:3000'],
+    origin: [
+      frontendUrl,
+      'https://olympido.com',
+      'https://www.olympido.com',
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://127.0.0.1:3000',
+    ],
     credentials: true,
   });
 

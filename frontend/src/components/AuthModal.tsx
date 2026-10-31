@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
-  Flame,
   Mail,
   Lock,
   Building2,
@@ -83,8 +83,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
           {/* Header */}
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-purple-600 flex items-center justify-center text-amber-300 shadow-md shadow-purple-600/30">
-              <Flame className="w-5 h-5 fill-amber-300" />
+            <div className="w-11 h-11 rounded-xl overflow-hidden shadow-md shadow-purple-600/25 border border-purple-200/60 bg-white shrink-0">
+              <Image
+                src="/logo.png"
+                alt="Olympido Logo"
+                width={44}
+                height={44}
+                className="w-full h-full object-cover"
+              />
             </div>
             <div>
               <h3 className="font-extrabold text-xl text-slate-900" style={{ fontFamily: "'Outfit', sans-serif" }}>

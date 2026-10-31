@@ -1,6 +1,10 @@
 <div align="center">
 
-  <h1>🏆 Olympido</h1>
+  <br />
+  <img src="./frontend/public/logo.png" alt="Olympido Logo" width="128" style="border-radius: 28px;" />
+  <br />
+
+  <h1>Olympido</h1>
   <p><strong>Next-Generation Academic Olympiad & Competitive Contest Platform</strong></p>
 
   <p>

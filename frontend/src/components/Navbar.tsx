@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 import {
   Flame,
   Compass,
@@ -64,15 +65,18 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Brand Logo with Depth & Glow */}
         <Link href="/" className="flex items-center gap-3 group shrink-0">
           <motion.div
-            whileHover={{ scale: 1.06, rotate: 3 }}
-            whileTap={{ scale: 0.96 }}
-            className="w-10 h-10 rounded-xl flex items-center justify-center relative overflow-hidden shadow-md shadow-purple-600/30 group-hover:shadow-lg group-hover:shadow-purple-600/40 transition-all"
-            style={{
-              background: "linear-gradient(135deg, #6C3EF4 0%, #5227DC 50%, #3B15A3 100%)",
-            }}
+            whileHover={{ scale: 1.08, rotate: 2 }}
+            whileTap={{ scale: 0.95 }}
+            className="w-10 h-10 rounded-xl overflow-hidden shadow-md shadow-purple-600/30 group-hover:shadow-lg group-hover:shadow-purple-600/40 transition-all border border-purple-200/50 bg-white"
           >
-            <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-            <Flame className="w-5 h-5 text-amber-300 fill-amber-300 drop-shadow-sm" />
+            <Image
+              src="/logo.png"
+              alt="Olympido Logo"
+              width={40}
+              height={40}
+              className="w-full h-full object-cover"
+              priority
+            />
           </motion.div>
           <div className="flex flex-col">
             <div className="flex items-center gap-1.5">

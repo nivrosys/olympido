@@ -2,7 +2,8 @@
 
 import React from "react";
 import Link from "next/link";
-import { Flame, ShieldCheck, Heart } from "lucide-react";
+import Image from "next/image";
+import { ShieldCheck, Heart } from "lucide-react";
 
 export const Footer: React.FC = () => {
   return (
@@ -12,9 +13,15 @@ export const Footer: React.FC = () => {
           
           {/* Brand info */}
           <div className="space-y-3 md:col-span-1">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center text-amber-300">
-                <Flame className="w-4 h-4 fill-amber-300" />
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg overflow-hidden shadow-sm shadow-purple-900/40 border border-purple-500/30 shrink-0">
+                <Image
+                  src="/logo.png"
+                  alt="Olympido Logo"
+                  width={32}
+                  height={32}
+                  className="w-full h-full object-cover"
+                />
               </div>
               <span className="font-extrabold text-lg text-white">Olympido</span>
             </div>

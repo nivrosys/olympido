@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
 import {
@@ -133,8 +134,14 @@ export const PublicScorecardView: React.FC<PublicScorecardViewProps> = ({ hashId
           <div className="p-6 sm:p-8 bg-gradient-to-b from-purple-50/60 via-white to-white border-b border-slate-200">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-3.5">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center shadow-md shadow-purple-600/30 ring-4 ring-purple-100">
-                  <Flame className="w-6 h-6 text-amber-300 fill-amber-300" />
+                <div className="w-12 h-12 rounded-2xl overflow-hidden shadow-md shadow-purple-600/30 ring-4 ring-purple-100 border border-purple-200/50 bg-white shrink-0">
+                  <Image
+                    src="/logo.png"
+                    alt="Olympido Logo"
+                    width={48}
+                    height={48}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">

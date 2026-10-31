@@ -20,6 +20,20 @@ export const metadata: Metadata = {
     "Discover, register, and compete in accredited Olympiad competitions worldwide. Verified school and university hosts, dynamic rating ladders, and digital scorecards.",
   icons: {
     icon: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+  },
+  openGraph: {
+    title: "Olympido — Competitive Academic Olympiad & Contest Arena",
+    description:
+      "Discover, register, and compete in accredited Olympiad competitions worldwide.",
+    images: [
+      {
+        url: "/logo.png",
+        width: 800,
+        height: 800,
+        alt: "Olympido Brand Logo",
+      },
+    ],
   },
 };
 
